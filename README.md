@@ -27,7 +27,7 @@ npm install
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Go to **Settings → API** and copy:
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 3. Go to **Settings → Database** and copy:
    - **Transaction pooler** URL (port `6543`) → `DATABASE_URL`
    - **Direct connection** URL (port `5432`) → `DATABASE_DIRECT_URL`
@@ -52,7 +52,7 @@ cp .env.example .env.local
 `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 DATABASE_URL=postgresql://postgres.xxx:password@pooler.supabase.com:6543/postgres?pgbouncer=true
 DATABASE_DIRECT_URL=postgresql://postgres.xxx:password@pooler.supabase.com:5432/postgres
