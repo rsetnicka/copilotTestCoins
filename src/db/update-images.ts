@@ -12,6 +12,12 @@ const db = drizzle(client);
 const WIKI_API = "https://commons.wikimedia.org/w/api.php";
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+// Wikimedia API requires a descriptive User-Agent for automated scripts
+const HEADERS = {
+  "User-Agent": "EuroTrackerCoinImages/1.0 (https://github.com/euro-coins-tracker; coin-collection-app) node-fetch/3",
+  "Accept": "application/json",
+};
+
 // Exact Wikimedia Commons category names for 2 euro coins per country
 const COMMEMORATIVE_CATEGORY: Record<string, string> = {
   "Andorra":       "2 euro commemorative coins of Andorra",
@@ -78,10 +84,10 @@ async function getCategoryFiles(category: string): Promise<string[]> {
     url.searchParams.set("cmtype", "file");
     url.searchParams.set("cmlimit", "500");
     url.searchParams.set("format", "json");
-    url.searchParams.set("origin", "*");
     if (cmcontinue) url.searchParams.set("cmcontinue", cmcontinue);
 
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for category: ${category}`);
     const data = await res.json();
     const members: Array<{ title: string }> = data?.query?.categorymembers ?? [];
     files.push(...members.map((m) => m.title));
@@ -106,9 +112,8 @@ async function getThumbnailUrls(
     url.searchParams.set("iiprop", "url");
     url.searchParams.set("iiurlwidth", "200");
     url.searchParams.set("format", "json");
-    url.searchParams.set("origin", "*");
 
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), { headers: HEADERS });
     const data = await res.json();
     const pages = data?.query?.pages ?? {};
 
@@ -182,8 +187,8 @@ async function updateImages(resetAll = false) {
     const stdCategory  = STANDARD_CATEGORY[country] ?? "";
 
     const [commFiles, stdFiles] = await Promise.all([
-      commCategory ? getCategoryFiles(commCategory) : Promise.resolve([]),
-      stdCategory  ? getCategoryFiles(stdCategory)  : Promise.resolve([]),
+      commCategory ? getCategoryFiles(commCategory).catch(() => [] as string[]) : Promise.resolve([] as string[]),
+      stdCategory  ? getCategoryFiles(stdCategory).catch(() => [] as string[])  : Promise.resolve([] as string[]),
     ]);
     await delay(200);
 
