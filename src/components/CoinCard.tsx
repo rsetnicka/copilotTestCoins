@@ -44,7 +44,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
           : "border-border bg-card hover:border-yellow-300 hover:bg-yellow-50/40",
         loading && "opacity-60 cursor-wait"
       )}
-      title={owned ? "Click to remove from collection" : "Click to add to collection"}
+
     >
       {/* Coin image — overflow-visible so scaled coin pops out of card */}
       <div
@@ -64,7 +64,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
             className={cn(
               "h-full w-full rounded-full object-cover",
               "transition-[transform,filter] duration-300 ease-out",
-              "group-hover/coin:scale-[2.8]",
+              "group-hover/coin:scale-[4]",
               "group-hover/coin:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
             )}
             unoptimized
@@ -73,7 +73,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
           <div
             className={cn(
               "flex h-full w-full items-center justify-center rounded-full text-sm font-bold",
-              "transition-transform duration-300 ease-out group-hover/coin:scale-[2.8]",
+              "transition-transform duration-300 ease-out group-hover/coin:scale-[4]",
               owned
                 ? "bg-yellow-400 text-yellow-900"
                 : "bg-muted/40 text-muted-foreground group-hover:bg-yellow-100"
