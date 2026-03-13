@@ -19,30 +19,31 @@ const HEADERS = {
 };
 
 // Exact Wikimedia Commons category names for 2 euro coins per country
+// Pattern: "Commemorative 2 euro coins of [Country]"
 const COMMEMORATIVE_CATEGORY: Record<string, string> = {
-  "Andorra":       "2 euro commemorative coins of Andorra",
-  "Austria":       "2 euro commemorative coins of Austria",
-  "Belgium":       "2 euro commemorative coins of Belgium",
-  "Cyprus":        "2 euro commemorative coins of Cyprus",
-  "Estonia":       "2 euro commemorative coins of Estonia",
-  "Finland":       "2 euro commemorative coins of Finland",
-  "France":        "2 euro commemorative coins of France",
-  "Germany":       "2 euro commemorative coins of Germany",
-  "Greece":        "2 euro commemorative coins of Greece",
-  "Ireland":       "2 euro commemorative coins of Ireland",
-  "Italy":         "2 euro commemorative coins of Italy",
-  "Latvia":        "2 euro commemorative coins of Latvia",
-  "Lithuania":     "2 euro commemorative coins of Lithuania",
-  "Luxembourg":    "2 euro commemorative coins of Luxembourg",
-  "Malta":         "2 euro commemorative coins of Malta",
-  "Monaco":        "2 euro commemorative coins of Monaco",
-  "Netherlands":   "2 euro commemorative coins of the Netherlands",
-  "Portugal":      "2 euro commemorative coins of Portugal",
-  "San Marino":    "2 euro commemorative coins of San Marino",
-  "Slovakia":      "2 euro commemorative coins of Slovakia",
-  "Slovenia":      "2 euro commemorative coins of Slovenia",
-  "Spain":         "2 euro commemorative coins of Spain",
-  "Vatican City":  "2 euro commemorative coins of Vatican City",
+  "Andorra":       "Commemorative 2 euro coins of Andorra",
+  "Austria":       "Commemorative 2 euro coins of Austria",
+  "Belgium":       "Commemorative 2 euro coins of Belgium",
+  "Cyprus":        "Commemorative 2 euro coins of Cyprus",
+  "Estonia":       "Commemorative 2 euro coins of Estonia",
+  "Finland":       "Commemorative 2 euro coins of Finland",
+  "France":        "Commemorative 2 euro coins of France",
+  "Germany":       "Commemorative 2 euro coins of Germany",
+  "Greece":        "Commemorative 2 euro coins of Greece",
+  "Ireland":       "Commemorative 2 euro coins of Ireland",
+  "Italy":         "Commemorative 2 euro coins of Italy",
+  "Latvia":        "Commemorative 2 euro coins of Latvia",
+  "Lithuania":     "Commemorative 2 euro coins of Lithuania",
+  "Luxembourg":    "Commemorative 2 euro coins of Luxembourg",
+  "Malta":         "Commemorative 2 euro coins of Malta",
+  "Monaco":        "Commemorative 2 euro coins of Monaco",
+  "Netherlands":   "Commemorative 2 euro coins of the Netherlands",
+  "Portugal":      "Commemorative 2 euro coins of Portugal",
+  "San Marino":    "Commemorative 2 euro coins of San Marino",
+  "Slovakia":      "Commemorative 2 euro coins of Slovakia",
+  "Slovenia":      "Commemorative 2 euro coins of Slovenia",
+  "Spain":         "Commemorative 2 euro coins of Spain",
+  "Vatican City":  "Commemorative 2 euro coins of Vatican City",
 };
 
 const STANDARD_CATEGORY: Record<string, string> = {
@@ -71,29 +72,67 @@ const STANDARD_CATEGORY: Record<string, string> = {
   "Vatican City":  "2 euro coins of Vatican City",
 };
 
-// Fetch all image file titles in a Wikimedia Commons category (handles pagination)
+// Fetch all image file titles in a category, including files in its direct subcategories
 async function getCategoryFiles(category: string): Promise<string[]> {
   const files: string[] = [];
-  let cmcontinue: string | undefined;
 
-  do {
+  // Inner helper: get direct file members (with pagination)
+  async function getDirectFiles(cat: string): Promise<string[]> {
+    const result: string[] = [];
+    let cmcontinue: string | undefined;
+    do {
+      const url = new URL(WIKI_API);
+      url.searchParams.set("action", "query");
+      url.searchParams.set("list", "categorymembers");
+      url.searchParams.set("cmtitle", `Category:${cat}`);
+      url.searchParams.set("cmtype", "file");
+      url.searchParams.set("cmlimit", "500");
+      url.searchParams.set("format", "json");
+      if (cmcontinue) url.searchParams.set("cmcontinue", cmcontinue);
+
+      const res = await fetch(url.toString(), { headers: HEADERS });
+      if (!res.ok) return result;
+      const data = await res.json();
+      const members: Array<{ title: string }> = data?.query?.categorymembers ?? [];
+      result.push(...members.map((m) => m.title));
+      cmcontinue = data?.continue?.cmcontinue;
+      if (cmcontinue) await delay(150);
+    } while (cmcontinue);
+    return result;
+  }
+
+  // Get subcategories of the main category
+  async function getSubcategories(cat: string): Promise<string[]> {
     const url = new URL(WIKI_API);
     url.searchParams.set("action", "query");
     url.searchParams.set("list", "categorymembers");
-    url.searchParams.set("cmtitle", `Category:${category}`);
-    url.searchParams.set("cmtype", "file");
-    url.searchParams.set("cmlimit", "500");
+    url.searchParams.set("cmtitle", `Category:${cat}`);
+    url.searchParams.set("cmtype", "subcat");
+    url.searchParams.set("cmlimit", "100");
     url.searchParams.set("format", "json");
-    if (cmcontinue) url.searchParams.set("cmcontinue", cmcontinue);
 
     const res = await fetch(url.toString(), { headers: HEADERS });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for category: ${category}`);
+    if (!res.ok) return [];
     const data = await res.json();
     const members: Array<{ title: string }> = data?.query?.categorymembers ?? [];
-    files.push(...members.map((m) => m.title));
-    cmcontinue = data?.continue?.cmcontinue;
-    if (cmcontinue) await delay(150);
-  } while (cmcontinue);
+    // Strip "Category:" prefix
+    return members.map((m) => m.title.replace(/^Category:/, ""));
+  }
+
+  // Get direct files from the main category
+  const direct = await getDirectFiles(category);
+  files.push(...direct);
+  await delay(200);
+
+  // Also get files from each subcategory (one level deep)
+  const subcats = await getSubcategories(category);
+  await delay(200);
+
+  for (const subcat of subcats) {
+    const subFiles = await getDirectFiles(subcat);
+    files.push(...subFiles);
+    await delay(150);
+  }
 
   return files;
 }
