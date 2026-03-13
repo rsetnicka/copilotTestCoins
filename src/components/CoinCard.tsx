@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { Coin } from "@/db/schema";
@@ -16,7 +17,6 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
 
   async function toggle() {
     setLoading(true);
-    // Optimistic update
     setOwned((prev) => !prev);
     try {
       const res = await fetch("/api/collection/toggle", {
@@ -24,10 +24,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ coinId: coin.id }),
       });
-      if (!res.ok) {
-        // Revert on failure
-        setOwned((prev) => !prev);
-      }
+      if (!res.ok) setOwned((prev) => !prev);
     } catch {
       setOwned((prev) => !prev);
     } finally {
@@ -49,16 +46,36 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       )}
       title={owned ? "Click to remove from collection" : "Click to add to collection"}
     >
-      {/* Coin icon */}
+      {/* Coin image or fallback */}
       <div
         className={cn(
-          "mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 text-lg font-bold transition-colors",
+          "mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 overflow-hidden transition-colors",
           owned
-            ? "border-yellow-500 bg-yellow-400 text-yellow-900"
-            : "border-muted bg-muted/40 text-muted-foreground group-hover:border-yellow-300 group-hover:bg-yellow-100"
+            ? "border-yellow-500"
+            : "border-muted group-hover:border-yellow-300"
         )}
       >
-        €2
+        {coin.imageUrl ? (
+          <Image
+            src={coin.imageUrl}
+            alt={`${coin.country} ${coin.year} ${coin.description}`}
+            width={64}
+            height={64}
+            className="h-full w-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <div
+            className={cn(
+              "flex h-full w-full items-center justify-center text-sm font-bold",
+              owned
+                ? "bg-yellow-400 text-yellow-900"
+                : "bg-muted/40 text-muted-foreground group-hover:bg-yellow-100"
+            )}
+          >
+            €2
+          </div>
+        )}
       </div>
 
       {/* Year */}
