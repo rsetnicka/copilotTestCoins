@@ -37,7 +37,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       onClick={toggle}
       disabled={loading}
       className={cn(
-        "group relative flex flex-col gap-1.5 rounded-xl border-2 p-3 text-left transition-all duration-200",
+        "group relative z-0 flex flex-col gap-1.5 rounded-xl border-2 p-3 text-left transition-all duration-200 hover:z-10",
         "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         owned
           ? "border-yellow-400 bg-yellow-50 shadow-yellow-100 shadow-sm"
@@ -46,10 +46,10 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       )}
       title={owned ? "Click to remove from collection" : "Click to add to collection"}
     >
-      {/* Coin image or fallback */}
+      {/* Coin image — overflow-visible so scaled coin pops out of card */}
       <div
         className={cn(
-          "mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 overflow-hidden transition-colors",
+          "group/coin relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
           owned
             ? "border-yellow-500"
             : "border-muted group-hover:border-yellow-300"
@@ -61,13 +61,19 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
             alt={`${coin.country} ${coin.year} ${coin.description}`}
             width={64}
             height={64}
-            className="h-full w-full object-cover"
+            className={cn(
+              "h-full w-full rounded-full object-cover",
+              "transition-[transform,filter] duration-300 ease-out",
+              "group-hover/coin:scale-[2.8]",
+              "group-hover/coin:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
+            )}
             unoptimized
           />
         ) : (
           <div
             className={cn(
-              "flex h-full w-full items-center justify-center text-sm font-bold",
+              "flex h-full w-full items-center justify-center rounded-full text-sm font-bold",
+              "transition-transform duration-300 ease-out group-hover/coin:scale-[2.8]",
               owned
                 ? "bg-yellow-400 text-yellow-900"
                 : "bg-muted/40 text-muted-foreground group-hover:bg-yellow-100"
@@ -116,3 +122,4 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
     </button>
   );
 }
+
