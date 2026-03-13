@@ -5,275 +5,167 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { coins } from "./schema";
 import { eq } from "drizzle-orm";
+import * as cheerio from "cheerio";
 
 const client = postgres(process.env.DATABASE_URL!, { prepare: false });
 const db = drizzle(client);
 
-const WIKI_API = "https://commons.wikimedia.org/w/api.php";
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+const BASE_URL = "https://www.coin-database.com";
+const LIST_URL = `${BASE_URL}/coin_sort_denomination2.php?id=1`;
 
-// Wikimedia API requires a descriptive User-Agent for automated scripts
-const HEADERS = {
-  "User-Agent": "EuroTrackerCoinImages/1.0 (https://github.com/euro-coins-tracker; coin-collection-app) node-fetch/3",
-  "Accept": "application/json",
+// Country name normalisation (page uses uppercase, may differ slightly)
+const COUNTRY_ALIASES: Record<string, string> = {
+  "ANDORRA":      "Andorra",
+  "AUSTRIA":      "Austria",
+  "BELGIUM":      "Belgium",
+  "CYPRUS":       "Cyprus",
+  "ESTONIA":      "Estonia",
+  "FINLAND":      "Finland",
+  "FRANCE":       "France",
+  "GERMANY":      "Germany",
+  "GREECE":       "Greece",
+  "IRELAND":      "Ireland",
+  "ITALY":        "Italy",
+  "LATVIA":       "Latvia",
+  "LITHUANIA":    "Lithuania",
+  "LUXEMBOURG":   "Luxembourg",
+  "MALTA":        "Malta",
+  "MONACO":       "Monaco",
+  "NETHERLANDS":  "Netherlands",
+  "PORTUGAL":     "Portugal",
+  "SAN MARINO":   "San Marino",
+  "SLOVAKIA":     "Slovakia",
+  "SLOVENIA":     "Slovenia",
+  "SPAIN":        "Spain",
+  "VATICAN CITY": "Vatican City",
+  "VATICAN":      "Vatican City",
 };
 
-// Exact Wikimedia Commons category names for 2 euro coins per country
-// Pattern: "Commemorative 2 euro coins of [Country]"
-const COMMEMORATIVE_CATEGORY: Record<string, string> = {
-  "Andorra":       "Commemorative 2 euro coins of Andorra",
-  "Austria":       "Commemorative 2 euro coins of Austria",
-  "Belgium":       "Commemorative 2 euro coins of Belgium",
-  "Cyprus":        "Commemorative 2 euro coins of Cyprus",
-  "Estonia":       "Commemorative 2 euro coins of Estonia",
-  "Finland":       "Commemorative 2 euro coins of Finland",
-  "France":        "Commemorative 2 euro coins of France",
-  "Germany":       "Commemorative 2 euro coins of Germany",
-  "Greece":        "Commemorative 2 euro coins of Greece",
-  "Ireland":       "Commemorative 2 euro coins of Ireland",
-  "Italy":         "Commemorative 2 euro coins of Italy",
-  "Latvia":        "Commemorative 2 euro coins of Latvia",
-  "Lithuania":     "Commemorative 2 euro coins of Lithuania",
-  "Luxembourg":    "Commemorative 2 euro coins of Luxembourg",
-  "Malta":         "Commemorative 2 euro coins of Malta",
-  "Monaco":        "Commemorative 2 euro coins of Monaco",
-  "Netherlands":   "Commemorative 2 euro coins of the Netherlands",
-  "Portugal":      "Commemorative 2 euro coins of Portugal",
-  "San Marino":    "Commemorative 2 euro coins of San Marino",
-  "Slovakia":      "Commemorative 2 euro coins of Slovakia",
-  "Slovenia":      "Commemorative 2 euro coins of Slovenia",
-  "Spain":         "Commemorative 2 euro coins of Spain",
-  "Vatican City":  "Commemorative 2 euro coins of Vatican City",
+type ScrapedCoin = {
+  country: string;
+  description: string;
+  year: number;
+  imageUrl: string | null;
 };
 
-const STANDARD_CATEGORY: Record<string, string> = {
-  "Andorra":       "2 euro coins of Andorra",
-  "Austria":       "2 euro coins of Austria",
-  "Belgium":       "2 euro coins of Belgium",
-  "Cyprus":        "2 euro coins of Cyprus",
-  "Estonia":       "2 euro coins of Estonia",
-  "Finland":       "2 euro coins of Finland",
-  "France":        "2 euro coins of France",
-  "Germany":       "2 euro coins of Germany",
-  "Greece":        "2 euro coins of Greece",
-  "Ireland":       "2 euro coins of Ireland",
-  "Italy":         "2 euro coins of Italy",
-  "Latvia":        "2 euro coins of Latvia",
-  "Lithuania":     "2 euro coins of Lithuania",
-  "Luxembourg":    "2 euro coins of Luxembourg",
-  "Malta":         "2 euro coins of Malta",
-  "Monaco":        "2 euro coins of Monaco",
-  "Netherlands":   "2 euro coins of the Netherlands",
-  "Portugal":      "2 euro coins of Portugal",
-  "San Marino":    "2 euro coins of San Marino",
-  "Slovakia":      "2 euro coins of Slovakia",
-  "Slovenia":      "2 euro coins of Slovenia",
-  "Spain":         "2 euro coins of Spain",
-  "Vatican City":  "2 euro coins of Vatican City",
-};
-
-// Fetch all image file titles in a category, including files in its direct subcategories
-async function getCategoryFiles(category: string): Promise<string[]> {
-  const files: string[] = [];
-
-  // Inner helper: get direct file members (with pagination)
-  async function getDirectFiles(cat: string): Promise<string[]> {
-    const result: string[] = [];
-    let cmcontinue: string | undefined;
-    do {
-      const url = new URL(WIKI_API);
-      url.searchParams.set("action", "query");
-      url.searchParams.set("list", "categorymembers");
-      url.searchParams.set("cmtitle", `Category:${cat}`);
-      url.searchParams.set("cmtype", "file");
-      url.searchParams.set("cmlimit", "500");
-      url.searchParams.set("format", "json");
-      if (cmcontinue) url.searchParams.set("cmcontinue", cmcontinue);
-
-      const res = await fetch(url.toString(), { headers: HEADERS });
-      if (!res.ok) return result;
-      const data = await res.json();
-      const members: Array<{ title: string }> = data?.query?.categorymembers ?? [];
-      result.push(...members.map((m) => m.title));
-      cmcontinue = data?.continue?.cmcontinue;
-      if (cmcontinue) await delay(150);
-    } while (cmcontinue);
-    return result;
-  }
-
-  // Get subcategories of the main category
-  async function getSubcategories(cat: string): Promise<string[]> {
-    const url = new URL(WIKI_API);
-    url.searchParams.set("action", "query");
-    url.searchParams.set("list", "categorymembers");
-    url.searchParams.set("cmtitle", `Category:${cat}`);
-    url.searchParams.set("cmtype", "subcat");
-    url.searchParams.set("cmlimit", "100");
-    url.searchParams.set("format", "json");
-
-    const res = await fetch(url.toString(), { headers: HEADERS });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const members: Array<{ title: string }> = data?.query?.categorymembers ?? [];
-    // Strip "Category:" prefix
-    return members.map((m) => m.title.replace(/^Category:/, ""));
-  }
-
-  // Get direct files from the main category
-  const direct = await getDirectFiles(category);
-  files.push(...direct);
-  await delay(200);
-
-  // Also get files from each subcategory (one level deep)
-  const subcats = await getSubcategories(category);
-  await delay(200);
-
-  for (const subcat of subcats) {
-    const subFiles = await getDirectFiles(subcat);
-    files.push(...subFiles);
-    await delay(150);
-  }
-
-  return files;
+function wordOverlap(a: string, b: string): number {
+  const wordsA = new Set(a.toLowerCase().split(/\W+/).filter((w) => w.length > 3));
+  const wordsB = new Set(b.toLowerCase().split(/\W+/).filter((w) => w.length > 3));
+  let hits = 0;
+  for (const w of wordsA) if (wordsB.has(w)) hits++;
+  return hits;
 }
 
-// Batch-fetch thumbnail URLs for up to 50 file titles at a time
-async function getThumbnailUrls(
-  fileTitles: string[]
-): Promise<Record<string, string>> {
-  const result: Record<string, string> = {};
-  for (let i = 0; i < fileTitles.length; i += 50) {
-    const batch = fileTitles.slice(i, i + 50);
-    const url = new URL(WIKI_API);
-    url.searchParams.set("action", "query");
-    url.searchParams.set("titles", batch.join("|"));
-    url.searchParams.set("prop", "imageinfo");
-    url.searchParams.set("iiprop", "url");
-    url.searchParams.set("iiurlwidth", "200");
-    url.searchParams.set("format", "json");
+async function scrapeCoindatabase(): Promise<ScrapedCoin[]> {
+  console.log("🌐 Fetching coin-database.com…");
+  const res = await fetch(LIST_URL, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "Accept": "text/html",
+    },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const html = await res.text();
+  console.log(`   Downloaded ${Math.round(html.length / 1024)} KB`);
 
-    const res = await fetch(url.toString(), { headers: HEADERS });
-    const data = await res.json();
-    const pages = data?.query?.pages ?? {};
+  const $ = cheerio.load(html);
+  const results: ScrapedCoin[] = [];
 
-    for (const page of Object.values(pages) as Array<{
-      title: string;
-      imageinfo?: Array<{ thumburl?: string; url?: string }>;
-    }>) {
-      const imgUrl =
-        page.imageinfo?.[0]?.thumburl ?? page.imageinfo?.[0]?.url;
-      if (page.title && imgUrl) result[page.title] = imgUrl;
-    }
-    await delay(150);
-  }
-  return result;
-}
+  // The page has repeating triplets of .innercoins tables: topping -> scnd -> thrd
+  const tables = $("table.innercoins").toArray();
 
-// Score how well a file title matches a coin (higher = better)
-function matchScore(
-  fileTitle: string,
-  year: number,
-  description: string
-): number {
-  const lower = fileTitle.toLowerCase();
-  let score = 0;
+  for (let i = 0; i < tables.length - 2; i++) {
+    const topping = $(tables[i]);
+    if (!topping.hasClass("topping")) continue;
 
-  if (lower.includes(String(year))) score += 10;
+    const scnd  = $(tables[i + 1]);
+    const thrd  = $(tables[i + 2]);
 
-  // Bonus for description keywords (skip short/common words)
-  const keywords = description
-    .toLowerCase()
-    .split(/[\s\-–—(),.]+/)
-    .filter((w) => w.length > 4 && !/^(anniversary|years|the|and|for|with|of)$/.test(w));
+    // Country from <h2>
+    const rawCountry = topping.find("h2").text().trim().toUpperCase();
+    const country = COUNTRY_ALIASES[rawCountry];
+    if (!country) continue;
 
-  for (const kw of keywords) {
-    if (lower.includes(kw)) score += 2;
+    // Description from second <th>
+    const description = topping.find("th").eq(1).text()
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Year from first data row in .thrd table
+    const yearText = thrd.find("tr.hl td").eq(1).find("strong").text().trim();
+    const year = parseInt(yearText, 10);
+    if (!year || isNaN(year)) continue;
+
+    // Obverse image: use data-original (lazy load attribute)
+    const imgPath = scnd.find("td.facefront img").attr("data-original")
+                 ?? scnd.find("td.facefront img").attr("src");
+    const imageUrl = imgPath && !imgPath.includes("no_image")
+      ? `${BASE_URL}${imgPath.replace("/pic/w70", "")}`
+      : null;
+
+    results.push({ country, description, year, imageUrl });
   }
 
-  // Prefer obverse images
-  if (lower.includes("obverse") || lower.includes("avers")) score += 1;
-
-  // Penalise reverse/proof/proof-like variants
-  if (lower.includes("reverse") || lower.includes("revers")) score -= 3;
-  if (lower.includes("proof")) score -= 1;
-
-  return score;
+  console.log(`   Parsed ${results.length} coin entries`);
+  return results;
 }
 
 async function updateImages(resetAll = false) {
   if (resetAll) {
-    console.log("🔄 Resetting all image_url values to NULL…");
+    console.log("🔄 Resetting all image_url values…\n");
     await db.update(coins).set({ imageUrl: null });
   }
 
-  const allCoins = await db.select().from(coins);
+  const scraped = await scrapeCoindatabase();
 
-  // Group coins by country
-  const byCountry = new Map<string, typeof allCoins>();
-  for (const coin of allCoins) {
-    if (!byCountry.has(coin.country)) byCountry.set(coin.country, []);
-    byCountry.get(coin.country)!.push(coin);
+  // Group scraped entries by country -> year -> list
+  const byCountryYear = new Map<string, Map<number, ScrapedCoin[]>>();
+  for (const entry of scraped) {
+    if (!byCountryYear.has(entry.country)) byCountryYear.set(entry.country, new Map());
+    const byYear = byCountryYear.get(entry.country)!;
+    if (!byYear.has(entry.year)) byYear.set(entry.year, []);
+    byYear.get(entry.year)!.push(entry);
   }
+
+  const allCoins = await db.select().from(coins);
+  console.log(`\n🪙 Matching ${allCoins.length} DB coins to scraped data…\n`);
 
   let updated = 0;
   let notFound = 0;
 
-  for (const [country, countryCoins] of byCountry) {
-    console.log(`\n🌍 ${country} (${countryCoins.length} coins)`);
-
-    // Fetch category files once per country
-    const commCategory = COMMEMORATIVE_CATEGORY[country] ?? "";
-    const stdCategory  = STANDARD_CATEGORY[country] ?? "";
-
-    const [commFiles, stdFiles] = await Promise.all([
-      commCategory ? getCategoryFiles(commCategory).catch(() => [] as string[]) : Promise.resolve([] as string[]),
-      stdCategory  ? getCategoryFiles(stdCategory).catch(() => [] as string[])  : Promise.resolve([] as string[]),
-    ]);
-    await delay(200);
-
-    // Build full thumbnail URL map for all discovered files
-    const allFiles = [...new Set([...commFiles, ...stdFiles])];
-    const thumbMap = allFiles.length
-      ? await getThumbnailUrls(allFiles)
-      : {};
-
-    for (const coin of countryCoins) {
-      const pool = coin.type === "standard" ? stdFiles : commFiles;
-
-      if (pool.length === 0) {
-        console.log(`  ✗ ${coin.year} (${coin.type}) — no category files`);
-        notFound++;
-        continue;
-      }
-
-      // Score every file in the pool and pick the best
-      const scored = pool
-        .map((f) => ({ file: f, score: matchScore(f, coin.year, coin.description) }))
-        .filter((x) => x.score >= 10) // must at least match the year
-        .sort((a, b) => b.score - a.score);
-
-      const best = scored[0];
-      const imgUrl = best ? thumbMap[best.file] : null;
-
-      if (imgUrl) {
-        await db.update(coins).set({ imageUrl: imgUrl }).where(eq(coins.id, coin.id));
-        console.log(`  ✓ ${coin.year} "${coin.description.slice(0, 50)}" → score ${best.score}`);
-        updated++;
-      } else {
-        console.log(`  ✗ ${coin.year} "${coin.description.slice(0, 50)}" — no match`);
-        notFound++;
-      }
+  for (const coin of allCoins) {
+    const byYear = byCountryYear.get(coin.country);
+    if (!byYear) {
+      console.log(`  ✗ ${coin.country} ${coin.year} — country not in scraped data`);
+      notFound++;
+      continue;
     }
+
+    const candidates = byYear.get(coin.year) ?? [];
+    const withImage  = candidates.filter((c) => c.imageUrl);
+
+    if (withImage.length === 0) {
+      console.log(`  ✗ ${coin.country} ${coin.year} "${coin.description.slice(0, 45)}" — no match`);
+      notFound++;
+      continue;
+    }
+
+    // Pick best candidate by description word overlap
+    const best = withImage
+      .map((c) => ({ c, score: wordOverlap(c.description, coin.description) }))
+      .sort((a, b) => b.score - a.score)[0].c;
+
+    await db.update(coins).set({ imageUrl: best.imageUrl }).where(eq(coins.id, coin.id));
+    console.log(`  ✓ ${coin.country} ${coin.year} → ${best.imageUrl!.split("/").pop()}`);
+    updated++;
   }
 
   console.log(`\n✅ Done — updated: ${updated}, not found: ${notFound} / ${allCoins.length}`);
   await client.end();
 }
 
-// Pass --reset to wipe all image_urls before running
 const reset = process.argv.includes("--reset");
 updateImages(reset).catch((err) => {
   console.error("Image update failed:", err);
   process.exit(1);
 });
-
