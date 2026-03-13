@@ -114,17 +114,41 @@ export default async function CollectionPage() {
           </div>
         </div>
 
-        {/* Country groups */}
-        <div className="flex flex-col gap-4">
-          {groups.map((group) => (
-            <CountrySection
-              key={group.country}
-              country={group.country}
-              countryCode={group.countryCode}
-              coins={group.coins}
-              ownedIds={ownedIds}
-            />
-          ))}
+        {/* Country groups with right-side navigation */}
+        <div className="flex gap-8">
+          <div className="flex-1 flex flex-col gap-4">
+            {groups.map((group) => (
+              <CountrySection
+                key={group.country}
+                country={group.country}
+                countryCode={group.countryCode}
+                coins={group.coins}
+                ownedIds={ownedIds}
+              />
+            ))}
+          </div>
+
+          {/* Right-side country nav (hidden on small screens) */}
+          <aside className="hidden xl:block w-56 shrink-0">
+            <div className="sticky top-24">
+              <h3 className="mb-2 text-sm font-semibold">Jump to country</h3>
+              <nav className="flex max-h-[60vh] flex-col gap-1 overflow-auto pr-2 text-sm">
+                {groups.map((g) => {
+                  const slug = g.country.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                  return (
+                    <a
+                      key={g.country}
+                      href={`#${slug}`}
+                      className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/40"
+                    >
+                      <span className="inline-flex h-5 w-8 items-center justify-center rounded-sm bg-muted/20 text-[11px] font-medium">{g.countryCode}</span>
+                      <span className="truncate">{g.country}</span>
+                    </a>
+                  );
+                })}
+              </nav>
+            </div>
+          </aside>
         </div>
       </main>
     </div>

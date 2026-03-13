@@ -33,8 +33,11 @@ export function CountrySection({
   const pct = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
   const flag = COUNTRY_FLAGS[countryCode] ?? "🪙";
 
+  // Create an id-safe slug for anchor linking
+  const slug = country.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
   return (
-    <section className="rounded-xl border bg-card shadow-sm">
+    <section id={slug} className="rounded-xl border bg-card shadow-sm">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-3 px-5 py-4 text-left"
