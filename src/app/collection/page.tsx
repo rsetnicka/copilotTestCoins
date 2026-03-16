@@ -76,16 +76,21 @@ export default async function CollectionPage() {
             </span>
           </div>
 
-          {/* Sign out */}
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          </form>
+          {/* User name and Sign out */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-foreground">
+              {user.user_metadata?.full_name || user.email}
+            </span>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
