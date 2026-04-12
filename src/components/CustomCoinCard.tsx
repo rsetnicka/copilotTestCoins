@@ -51,7 +51,7 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
     <>
     <div
       className={cn(
-        "group relative z-0 flex flex-col gap-1.5 rounded-xl border-2 border-violet-200 bg-violet-50/50 p-3 text-left shadow-sm dark:border-violet-500/35 dark:bg-violet-950/40 dark:shadow-violet-950/30",
+        "relative z-0 flex flex-col gap-1.5 rounded-xl border-2 border-violet-200 bg-violet-50/50 p-3 text-left shadow-sm dark:border-violet-500/35 dark:bg-violet-950/40 dark:shadow-violet-950/30",
         "hover:z-10 hover:shadow-md",
         loading && !deleteDialogOpen && "pointer-events-none opacity-60"
       )}
@@ -69,7 +69,7 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
 
       <div
         className={cn(
-          "relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-violet-300 transition-colors hover:z-50 dark:border-violet-400/45"
+          "group relative z-10 mx-auto flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-violet-300 transition-colors hover:z-50 dark:border-violet-400/45"
         )}
       >
         {imageUrl ? (

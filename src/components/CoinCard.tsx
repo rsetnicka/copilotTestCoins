@@ -51,7 +51,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       onClick={toggle}
       disabled={loading}
       className={cn(
-        "group relative z-0 flex flex-col gap-1.5 rounded-xl border-2 p-3 text-left transition-all duration-200 hover:z-10",
+        "relative z-0 flex flex-col gap-1.5 rounded-xl border-2 p-3 text-left transition-all duration-200 hover:z-10",
         "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         owned
           ? "border-amber-400 bg-card shadow-sm shadow-amber-500/10 ring-1 ring-amber-400/25 dark:border-amber-500/70 dark:bg-card dark:shadow-amber-950/20 dark:ring-amber-400/20"
@@ -63,7 +63,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       {/* Coin image — overflow-visible so scaled coin pops out of card */}
       <div
         className={cn(
-          "relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
+          "group relative z-10 mx-auto flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
           owned
             ? "border-amber-400/90 dark:border-amber-400/80"
             : "border-muted group-hover:border-yellow-300 dark:group-hover:border-amber-500/50"
