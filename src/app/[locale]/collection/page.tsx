@@ -126,42 +126,40 @@ export default async function CollectionPage({
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-sm font-bold text-amber-950 shadow-sm shadow-amber-900/15 ring-1 ring-amber-600/15 dark:shadow-[0_4px_20px_rgba(251,191,36,0.2)] dark:ring-amber-400/25">
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] gap-x-3 gap-y-1.5 px-4 py-2.5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-1 lg:items-center lg:gap-y-0 lg:py-3">
+          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 self-center lg:col-auto lg:row-auto">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-sm font-bold text-amber-950 shadow-sm shadow-amber-900/15 ring-1 ring-amber-600/15 dark:shadow-[0_4px_20px_rgba(251,191,36,0.2)] dark:ring-amber-400/25">
               €2
             </span>
-            <span className="font-semibold">EuroTracker</span>
+            <span className="truncate font-semibold">EuroTracker</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-            <Coins className="h-4 w-4 shrink-0" />
-            <span>
-              <span className="font-semibold text-foreground">{totalOwned}</span>
-              /{totalCoins} {t("coinsLabel")}
-            </span>
-            <span className="text-xs text-violet-800/90">
-              {t("personalBadge", { count: customTotal })}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher className="hidden sm:inline-flex" />
-            <ThemeToggle className="hidden sm:inline-flex" />
-            <span className="hidden max-w-[140px] truncate text-sm font-medium text-foreground sm:inline md:max-w-[200px]">
+          <div className="col-start-2 row-start-1 flex shrink-0 items-center justify-end gap-1.5 self-center sm:gap-2 lg:col-start-3 lg:row-start-1">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            <span className="hidden min-w-0 max-w-[10rem] truncate text-sm font-medium text-foreground lg:inline xl:max-w-[14rem] 2xl:max-w-[18rem]">
               {sessionUser.user_metadata?.full_name || sessionUser.email}
             </span>
-            <LanguageSwitcher className="sm:hidden" />
-            <ThemeToggle className="sm:hidden" />
-            <form action={signOut}>
+            <form action={signOut} className="shrink-0">
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:px-3"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 shrink-0" />
                 {t("signOut")}
               </button>
             </form>
+          </div>
+
+          <div className="col-span-2 col-start-1 row-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:justify-center">
+            <Coins className="h-4 w-4 shrink-0" />
+            <span className="min-w-0">
+              <span className="font-semibold text-foreground">{totalOwned}</span>
+              /{totalCoins} {t("coinsLabel")}
+            </span>
+            <span className="text-xs text-violet-800/90 dark:text-violet-300/90">
+              {t("personalBadge", { count: customTotal })}
+            </span>
           </div>
         </div>
       </header>
