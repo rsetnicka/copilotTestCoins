@@ -59,7 +59,7 @@
   "addCoin": {
     "button": "Add personal coin",
     "dialogTitle": "Add a personal coin",
-    "dialogIntro": "Only you can see this coin. Photos are resized to WebP to save space. Uploads use your signed-in session (no service role key required).",
+    "dialogIntro": "Only you can see this coin. Frame the coin in the circle (drag and zoom), then save — the photo is sent as a square JPEG and resized to WebP on the server. Uploads use your signed-in session (no service role key required).",
     "name": "Name",
     "country": "Country",
     "countryOther": "Other (enter country name below)",
@@ -84,7 +84,14 @@
     "cancel": "Cancel",
     "save": "Save coin",
     "saving": "Saving…",
-    "saveFailed": "Could not save coin."
+    "saveFailed": "Could not save coin.",
+    "framingHint": "Drag to center the coin inside the circle. Scroll or use the sliders to zoom and rotate.",
+    "framingZoom": "Zoom",
+    "framingRotation": "Rotation",
+    "framingReset": "Reset framing",
+    "framingCanvasAria": "Coin photo framing: drag to pan",
+    "framingLoading": "Loading image…",
+    "framingExportFailed": "Could not prepare the framed photo. Try another image."
   },
   "theme": {
     "groupLabel": "Color theme",

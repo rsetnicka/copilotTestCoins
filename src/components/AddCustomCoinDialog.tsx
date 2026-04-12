@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CoinPhotoFramer, type CoinPhotoFramerHandle } from "@/components/CoinPhotoFramer";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
@@ -33,6 +34,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
   const router = useRouter();
   const t = useTranslations("addCoin");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const framerRef = useRef<CoinPhotoFramerHandle>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,10 +124,20 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
       country = rest.join("\t");
     }
 
-    const file = imageFile ?? fileInputRef.current?.files?.[0] ?? null;
-    if (!file) {
+    const baseFile = imageFile ?? fileInputRef.current?.files?.[0] ?? null;
+    if (!baseFile) {
       setError(t("missingPhoto"));
       return;
+    }
+
+    let uploadFile: File = baseFile;
+    if (previewUrl && framerRef.current) {
+      const framed = await framerRef.current.exportFramedJpeg();
+      if (!framed) {
+        setError(t("framingExportFailed"));
+        return;
+      }
+      uploadFile = framed;
     }
 
     const fd = new FormData();
@@ -134,7 +146,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
     fd.set("country", country);
     fd.set("countryCode", countryCode);
     fd.set("year", year.trim());
-    fd.set("image", file);
+    fd.set("image", uploadFile);
 
     setLoading(true);
     try {
@@ -323,6 +335,13 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                           )}
                           <p className="text-xs text-muted-foreground">{t("replaceHint")}</p>
                         </div>
+                        <CoinPhotoFramer
+                          ref={framerRef}
+                          imageUrl={previewUrl}
+                          sourceKey={previewUrl}
+                          disabled={loading}
+                          className="w-full pt-1"
+                        />
                         <button
                           type="button"
                           onClick={(ev) => {

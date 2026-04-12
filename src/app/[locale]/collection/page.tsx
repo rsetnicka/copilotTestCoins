@@ -60,17 +60,6 @@ export default async function CollectionPage({
   const ownedIds = new Set(userOwned.map((r) => r.coinId));
 
   const groupMap = new Map<string, CountryGroup>();
-  for (const coin of allCoins) {
-    if (!groupMap.has(coin.country)) {
-      groupMap.set(coin.country, {
-        country: coin.country,
-        countryCode: coin.countryCode,
-        entries: [],
-      });
-    }
-    groupMap.get(coin.country)!.entries.push({ variant: "catalog", coin });
-  }
-
   for (const row of customCoins) {
     if (!groupMap.has(row.country)) {
       groupMap.set(row.country, {
@@ -84,6 +73,17 @@ export default async function CollectionPage({
       row,
       imageUrl: customCoinPublicUrl(row.imagePath),
     });
+  }
+
+  for (const coin of allCoins) {
+    if (!groupMap.has(coin.country)) {
+      groupMap.set(coin.country, {
+        country: coin.country,
+        countryCode: coin.countryCode,
+        entries: [],
+      });
+    }
+    groupMap.get(coin.country)!.entries.push({ variant: "catalog", coin });
   }
 
   const countryOrder: string[] = [];

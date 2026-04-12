@@ -59,7 +59,7 @@
   "addCoin": {
     "button": "Pridať osobnú mincu",
     "dialogTitle": "Pridať osobnú mincu",
-    "dialogIntro": "Túto mincu vidíte len vy. Fotografie sa zmenšia do WebP, aby šetrili miesto. Nahrávanie používa vašu prihlásenú reláciu (nie je potrebný service role kľúč).",
+    "dialogIntro": "Túto mincu vidíte len vy. Mincu zarámujte do kruhu (ťahaním a priblížením), potom uložte — fotografia sa odošle ako štvorcový JPEG a na serveri sa zmenší do WebP. Nahrávanie používa vašu prihlásenú reláciu (nie je potrebný service role kľúč).",
     "name": "Názov",
     "country": "Krajina",
     "countryOther": "Iné (nižšie zadajte názov krajiny)",
@@ -84,7 +84,14 @@
     "cancel": "Zrušiť",
     "save": "Uložiť mincu",
     "saving": "Ukladá sa…",
-    "saveFailed": "Mincu sa nepodarilo uložiť."
+    "saveFailed": "Mincu sa nepodarilo uložiť.",
+    "framingHint": "Potiahnutím vycentrujte mincu v kruhu. Rolovaním alebo posuvníkmi priblížte, oddialte alebo otočte.",
+    "framingZoom": "Priblíženie",
+    "framingRotation": "Otočenie",
+    "framingReset": "Obnoviť orez",
+    "framingCanvasAria": "Úprava fotografie mince: ťahaním posuniete",
+    "framingLoading": "Načítava sa obrázok…",
+    "framingExportFailed": "Nepodarilo sa pripraviť orezanú fotografiu. Skúste iný obrázok."
   },
   "theme": {
     "groupLabel": "Farebná téma",
