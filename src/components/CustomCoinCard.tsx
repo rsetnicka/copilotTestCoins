@@ -4,24 +4,29 @@ import { startTransition, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EditCustomCoinDialog, type CountryOption } from "@/components/AddCustomCoinDialog";
+import { createClient as createBrowserSupabase } from "@/lib/supabase/client";
+import { CUSTOM_COIN_STORAGE_BUCKET } from "@/lib/custom-coin-constants";
 import type { UserCustomCoin } from "@/db/schema";
 
 interface CustomCoinCardProps {
   row: UserCustomCoin;
   imageUrl: string;
+  countryOptions: CountryOption[];
 }
 
-export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
+export function CustomCoinCard({ row, imageUrl, countryOptions }: CustomCoinCardProps) {
   const router = useRouter();
   const t = useTranslations("customCoinCard");
   const tAuth = useTranslations("auth");
   const tAddCoin = useTranslations("addCoin");
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   async function performDelete() {
     setLoading(true);
@@ -33,6 +38,11 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
         const j = await res.json().catch(() => ({}));
         window.alert((j as { error?: string }).error ?? t("deleteFailed"));
         return;
+      }
+      const sb = createBrowserSupabase();
+      const { error: rmErr } = await sb.storage.from(CUSTOM_COIN_STORAGE_BUCKET).remove([row.imagePath]);
+      if (rmErr) {
+        console.error("custom-coins client storage remove:", rmErr.message);
       }
       setDeleteDialogOpen(false);
       startTransition(() => {
@@ -58,6 +68,16 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
     >
       <button
         type="button"
+        onClick={() => setEditOpen(true)}
+        disabled={loading}
+        className="absolute right-9 top-2 z-20 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-violet-500/15 hover:text-violet-800 dark:hover:text-violet-200"
+        title={t("editTitle")}
+        aria-label={t("editAria")}
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
         onClick={() => setDeleteDialogOpen(true)}
         disabled={loading}
         className="absolute right-2 top-2 z-20 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -74,6 +94,7 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
       >
         {imageUrl ? (
           <Image
+            key={imageUrl}
             src={imageUrl}
             alt={alt}
             width={256}
@@ -123,6 +144,14 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
         {t("personal")}
       </Badge>
     </div>
+
+    <EditCustomCoinDialog
+      countryOptions={countryOptions}
+      row={row}
+      imageUrl={imageUrl}
+      open={editOpen}
+      onOpenChange={setEditOpen}
+    />
 
     {deleteDialogOpen && (
       <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">

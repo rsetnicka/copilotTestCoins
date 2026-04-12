@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { CoinCard } from "@/components/CoinCard";
 import { CustomCoinCard } from "@/components/CustomCoinCard";
+import type { CountryOption } from "@/components/AddCustomCoinDialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Coin, UserCustomCoin } from "@/db/schema";
@@ -25,6 +26,7 @@ interface CountrySectionProps {
   countryCode: string;
   entries: CountryGridEntry[];
   ownedIds: Set<string>;
+  countryOptions: CountryOption[];
 }
 
 export function CountrySection({
@@ -32,6 +34,7 @@ export function CountrySection({
   countryCode,
   entries,
   ownedIds,
+  countryOptions,
 }: CountrySectionProps) {
   const [open, setOpen] = useState(true);
   const ownedCount = entries.filter((e) =>
@@ -100,7 +103,12 @@ export function CountrySection({
                 e.variant === "catalog" ? (
                   <CoinCard key={e.coin.id} coin={e.coin} owned={ownedIds.has(e.coin.id)} />
                 ) : (
-                  <CustomCoinCard key={e.row.id} row={e.row} imageUrl={e.imageUrl} />
+                  <CustomCoinCard
+                    key={e.row.id}
+                    row={e.row}
+                    imageUrl={e.imageUrl}
+                    countryOptions={countryOptions}
+                  />
                 )
               )}
             </div>

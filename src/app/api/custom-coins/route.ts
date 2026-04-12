@@ -1,22 +1,19 @@
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
 import { revalidateCollectionPages } from "@/lib/revalidate-collection";
-import { db } from "@/db";
-import { coins, userCustomCoins } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
-import { CUSTOM_COIN_STORAGE_BUCKET } from "@/lib/custom-coin-constants";
-import { compressCoinPhoto } from "@/lib/compress-coin-image";
+import {
+  isValidCustomCoinImagePath,
+  isUuid,
+  validateCustomCoinTextFields,
+} from "@/app/api/custom-coins/validate-custom-coin";
 
-const MAX_NAME = 200;
-const MAX_DESC = 2000;
-const MAX_COUNTRY_LEN = 120;
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
-
-function parseYear(raw: string | null): number | null {
-  if (raw == null || raw.trim() === "") return null;
-  const y = Number.parseInt(raw.trim(), 10);
-  if (!Number.isFinite(y) || y < 1800 || y > 2100) return null;
-  return y;
+function readJsonRecord(request: Request): Promise<Record<string, unknown>> {
+  return request.json().then((body) => {
+    if (body == null || typeof body !== "object" || Array.isArray(body)) {
+      throw new SyntaxError("Invalid JSON body");
+    }
+    return body as Record<string, unknown>;
+  });
 }
 
 export async function POST(request: Request) {
@@ -28,113 +25,124 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let form: FormData;
+  let body: Record<string, unknown>;
   try {
-    form = await request.formData();
+    body = await readJsonRecord(request);
   } catch {
-    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+    return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
   }
 
-  const name = String(form.get("name") ?? "").trim();
-  const descriptionRaw = form.get("description");
-  const description =
-    descriptionRaw == null || String(descriptionRaw).trim() === ""
-      ? null
-      : String(descriptionRaw).trim();
-  const country = String(form.get("country") ?? "").trim();
-  const countryCode = String(form.get("countryCode") ?? "").trim().toUpperCase();
-  const yearRaw = String(form.get("year") ?? "").trim();
-  const year = parseYear(yearRaw === "" ? null : yearRaw);
-  if (yearRaw !== "" && year == null) {
-    return NextResponse.json({ error: "Invalid year" }, { status: 400 });
-  }
-
-  const file = form.get("image");
-  if (!name || name.length > MAX_NAME) {
-    return NextResponse.json({ error: "Name is required (max 200 characters)." }, { status: 400 });
-  }
-  if (description && description.length > MAX_DESC) {
-    return NextResponse.json({ error: "Description is too long." }, { status: 400 });
-  }
-  if (!country || country.length > MAX_COUNTRY_LEN) {
-    return NextResponse.json({ error: "Country is required." }, { status: 400 });
-  }
-  if (!countryCode || countryCode.length > 8) {
-    return NextResponse.json({ error: "Invalid country code." }, { status: 400 });
-  }
-
-  if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: "Image file is required." }, { status: 400 });
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Image is too large (max 15 MB before processing)." }, { status: 413 });
-  }
-
-  const allowedRows = await db
-    .selectDistinct({ country: coins.country, countryCode: coins.countryCode })
-    .from(coins);
-  const allowedPairs = new Set(allowedRows.map((r) => `${r.countryCode}\t${r.country}`));
-
-  if (countryCode === "OT") {
-    if (!country) {
-      return NextResponse.json({ error: "Country name is required." }, { status: 400 });
-    }
-  } else if (!allowedPairs.has(`${countryCode}\t${country}`)) {
-    return NextResponse.json({ error: "Unknown country selection." }, { status: 400 });
-  }
-
-  const mime = file.type.toLowerCase();
-  if (
-    !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mime)
-  ) {
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  const imagePath = typeof body.imagePath === "string" ? body.imagePath.trim() : "";
+  if (!isUuid(id) || !isValidCustomCoinImagePath(user.id, id, imagePath)) {
     return NextResponse.json(
-      { error: "Unsupported image type. Use JPEG, PNG, WebP, or GIF." },
+      { error: "Invalid id or imagePath. Upload the image from the app (browser) first." },
       { status: 400 }
     );
   }
 
-  const id = crypto.randomUUID();
-  const imagePath = `${user.id}/${id}.webp`;
-  const raw = Buffer.from(await file.arrayBuffer());
-
-  let webp: Buffer;
-  try {
-    webp = await compressCoinPhoto(raw);
-  } catch {
-    return NextResponse.json({ error: "Could not process image." }, { status: 400 });
-  }
-
-  const bucket = CUSTOM_COIN_STORAGE_BUCKET;
-  const { error: upErr } = await supabase.storage.from(bucket).upload(imagePath, webp, {
-    contentType: "image/webp",
-    upsert: false,
+  const descriptionIn =
+    body.description === null || body.description === undefined
+      ? null
+      : String(body.description);
+  const parsed = await validateCustomCoinTextFields({
+    name: String(body.name ?? ""),
+    description: descriptionIn,
+    country: String(body.country ?? ""),
+    countryCode: String(body.countryCode ?? ""),
+    yearRaw: String(body.year ?? ""),
   });
-  if (upErr) {
-    console.error("custom-coins upload:", upErr.message);
-    return NextResponse.json(
-      {
-        error:
-          "Storage upload failed. In Supabase, create a public bucket named custom-coins and run the policies in supabase/custom-coins-storage.sql (Dashboard → SQL).",
-      },
-      { status: 502 }
-    );
+  if (!parsed.ok) return parsed.res;
+  const { name, description, country, countryCode, year } = parsed;
+
+  const nowIso = new Date().toISOString();
+  const { error: insErr } = await supabase.from("user_custom_coins").insert({
+    id,
+    user_id: user.id,
+    name,
+    description,
+    country,
+    country_code: countryCode,
+    year,
+    image_path: imagePath,
+    updated_at: nowIso,
+  });
+
+  if (insErr) {
+    console.error("custom-coins insert:", insErr.message);
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
 
+  revalidateCollectionPages();
+  return NextResponse.json({ ok: true, id });
+}
+
+export async function PATCH(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: Record<string, unknown>;
   try {
-    await db.insert(userCustomCoins).values({
-      id,
-      userId: user.id,
+    body = await readJsonRecord(request);
+  } catch {
+    return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
+  }
+
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  if (!id) {
+    return NextResponse.json({ error: "Coin id is required." }, { status: 400 });
+  }
+
+  const { data: existing, error: exErr } = await supabase
+    .from("user_custom_coins")
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (exErr) {
+    console.error("custom-coins patch select:", exErr.message);
+    return NextResponse.json({ error: exErr.message }, { status: 500 });
+  }
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const descriptionIn =
+    body.description === null || body.description === undefined
+      ? null
+      : String(body.description);
+  const parsed = await validateCustomCoinTextFields({
+    name: String(body.name ?? ""),
+    description: descriptionIn,
+    country: String(body.country ?? ""),
+    countryCode: String(body.countryCode ?? ""),
+    yearRaw: String(body.year ?? ""),
+  });
+  if (!parsed.ok) return parsed.res;
+  const { name, description, country, countryCode, year } = parsed;
+
+  const { error: updErr } = await supabase
+    .from("user_custom_coins")
+    .update({
       name,
       description,
       country,
-      countryCode,
+      country_code: countryCode,
       year,
-      imagePath,
-    });
-  } catch (e) {
-    await supabase.storage.from(bucket).remove([imagePath]);
-    console.error("custom-coins db insert:", e);
-    return NextResponse.json({ error: "Could not save coin." }, { status: 500 });
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (updErr) {
+    console.error("custom-coins update:", updErr.message);
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
   }
 
   revalidateCollectionPages();
@@ -155,19 +163,26 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "id query parameter is required" }, { status: 400 });
   }
 
-  const row = await db.query.userCustomCoins.findFirst({
-    where: and(eq(userCustomCoins.id, id), eq(userCustomCoins.userId, user.id)),
-  });
+  const { data: row, error: selErr } = await supabase
+    .from("user_custom_coins")
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (selErr) {
+    console.error("custom-coins delete select:", selErr.message);
+    return NextResponse.json({ error: selErr.message }, { status: 500 });
+  }
   if (!row) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await db.delete(userCustomCoins).where(and(eq(userCustomCoins.id, id), eq(userCustomCoins.userId, user.id)));
+  const { error: delErr } = await supabase.from("user_custom_coins").delete().eq("id", id).eq("user_id", user.id);
 
-  const bucket = CUSTOM_COIN_STORAGE_BUCKET;
-  const { error: rmErr } = await supabase.storage.from(bucket).remove([row.imagePath]);
-  if (rmErr) {
-    console.error("custom-coins storage remove:", rmErr.message);
+  if (delErr) {
+    console.error("custom-coins delete:", delErr.message);
+    return NextResponse.json({ error: delErr.message }, { status: 500 });
   }
 
   revalidateCollectionPages();

@@ -53,6 +53,8 @@ export const userCustomCoins = pgTable("user_custom_coins", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+  /** Bumps on every save so public image URLs can cache-bust after replace (same Storage path). */
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Coin = typeof coins.$inferSelect;

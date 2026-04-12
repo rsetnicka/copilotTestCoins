@@ -2,8 +2,9 @@ import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { coins, userCollections, userCustomCoins } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { coins } from "@/db/schema";
+import { asc } from "drizzle-orm";
+import { userCustomCoinFromSupabase, type UserCustomCoinSnakeRow } from "@/lib/user-custom-coin-mapper";
 import { CountrySection, type CountryGridEntry } from "@/components/CountrySection";
 import { AddCustomCoinDialog } from "@/components/AddCustomCoinDialog";
 import { customCoinPublicUrl } from "@/lib/custom-coin-public-url";
@@ -40,23 +41,38 @@ export default async function CollectionPage({
   const sessionUser = user as NonNullable<typeof user>;
   const userId = sessionUser.id;
 
-  const [allCoins, userOwned, customCoins, countryRows] = await Promise.all([
+  const [allCoins, ownedResult, customResult, countryRows] = await Promise.all([
     db.select().from(coins).orderBy(asc(coins.sortOrder), asc(coins.year)),
-    db
-      .select({ coinId: userCollections.coinId })
-      .from(userCollections)
-      .where(eq(userCollections.userId, userId)),
-    db
-      .select()
-      .from(userCustomCoins)
-      .where(eq(userCustomCoins.userId, userId))
-      .orderBy(asc(userCustomCoins.createdAt)),
+    supabase.from("user_collections").select("coin_id").eq("user_id", userId),
+    supabase
+      .from("user_custom_coins")
+      .select(
+        "id, user_id, name, description, country, country_code, year, image_path, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
     db
       .selectDistinct({ country: coins.country, countryCode: coins.countryCode })
       .from(coins)
       .orderBy(asc(coins.country)),
   ]);
 
+  if (ownedResult.error) {
+    throw new Error(
+      `Could not load owned coins: ${ownedResult.error.message}. With Row Level Security enabled, the app reads your collection through your Supabase session (not the raw database pooler).`
+    );
+  }
+
+  if (customResult.error) {
+    throw new Error(
+      `Could not load personal coins: ${customResult.error.message}. Run supabase/user-custom-coins-rls.sql if RLS is enabled on user_custom_coins.`
+    );
+  }
+
+  const userOwned = (ownedResult.data ?? []).map((r) => ({ coinId: r.coin_id as string }));
+  const customCoins = (customResult.data ?? []).map((r) =>
+    userCustomCoinFromSupabase(r as UserCustomCoinSnakeRow)
+  );
   const ownedIds = new Set(userOwned.map((r) => r.coinId));
 
   const groupMap = new Map<string, CountryGroup>();
@@ -71,7 +87,7 @@ export default async function CollectionPage({
     groupMap.get(row.country)!.entries.push({
       variant: "custom",
       row,
-      imageUrl: customCoinPublicUrl(row.imagePath),
+      imageUrl: customCoinPublicUrl(row.imagePath, row.updatedAt),
     });
   }
 
@@ -207,6 +223,7 @@ export default async function CollectionPage({
                 countryCode={group.countryCode}
                 entries={group.entries}
                 ownedIds={ownedIds}
+                countryOptions={countryRows}
               />
             ))}
           </div>

@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
 import { revalidateCollectionPages } from "@/lib/revalidate-collection";
-import { userCollections } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
-import { and, eq } from "drizzle-orm";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,27 +17,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "coinId required" }, { status: 400 });
   }
 
-  // Check if coin is already owned
-  const existing = await db.query.userCollections.findFirst({
-    where: and(
-      eq(userCollections.userId, user.id),
-      eq(userCollections.coinId, coinId)
-    ),
-  });
+  const { data: existing, error: selectError } = await supabase
+    .from("user_collections")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("coin_id", coinId)
+    .maybeSingle();
+
+  if (selectError) {
+    console.error("collection toggle select:", selectError.message);
+    return NextResponse.json({ error: selectError.message }, { status: 500 });
+  }
 
   if (existing) {
-    await db
-      .delete(userCollections)
-      .where(
-        and(
-          eq(userCollections.userId, user.id),
-          eq(userCollections.coinId, coinId)
-        )
-      );
+    const { error: deleteError } = await supabase
+      .from("user_collections")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("coin_id", coinId);
+    if (deleteError) {
+      console.error("collection toggle delete:", deleteError.message);
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
     revalidateCollectionPages();
     return NextResponse.json({ owned: false });
   }
-  await db.insert(userCollections).values({ userId: user.id, coinId });
+
+  const { error: insertError } = await supabase.from("user_collections").insert({
+    user_id: user.id,
+    coin_id: coinId,
+  });
+  if (insertError) {
+    console.error("collection toggle insert:", insertError.message);
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
   revalidateCollectionPages();
   return NextResponse.json({ owned: true });
 }
