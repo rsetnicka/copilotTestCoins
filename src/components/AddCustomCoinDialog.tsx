@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ interface AddCustomCoinDialogProps {
 
 export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps) {
   const router = useRouter();
+  const t = useTranslations("addCoin");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,7 +67,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
         return;
       }
       if (!isAcceptedImage(file)) {
-        setError("Please use a JPEG, PNG, WebP, or GIF image.");
+        setError(t("invalidImageType"));
         return;
       }
       setError(null);
@@ -82,7 +84,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
         /* DataTransfer unsupported — submit still uses imageFile state */
       }
     },
-    [clearImage]
+    [clearImage, t]
   );
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
       countryCode = "OT";
       country = otherCountry.trim();
       if (!country) {
-        setError("Enter the country name for “Other”.");
+        setError(t("countryOtherError"));
         return;
       }
     } else {
@@ -122,7 +124,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
 
     const file = imageFile ?? fileInputRef.current?.files?.[0] ?? null;
     if (!file) {
-      setError("Add a coin photo by clicking or dragging a file here.");
+      setError(t("missingPhoto"));
       return;
     }
 
@@ -139,7 +141,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
       const res = await fetch("/api/custom-coins", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError((data as { error?: string }).error ?? "Could not save coin.");
+        setError((data as { error?: string }).error ?? t("saveFailed"));
         return;
       }
       startTransition(() => {
@@ -161,19 +163,19 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
       <Button
         type="button"
         variant="outline"
-        className="gap-2 border-violet-200 bg-violet-50/40 text-violet-950 hover:bg-violet-100"
+        className="gap-2 border-violet-200 bg-violet-50/40 text-violet-950 hover:bg-violet-100 dark:border-violet-500/35 dark:bg-violet-950/35 dark:text-violet-100 dark:hover:bg-violet-900/45"
         onClick={() => setOpen(true)}
       >
         <Plus className="h-4 w-4" />
-        Add personal coin
+        {t("button")}
       </Button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
           <button
             type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label="Close"
+            className="absolute inset-0 bg-black/40 dark:bg-black/60"
+            aria-label={t("close")}
             onClick={() => !loading && setOpen(false)}
           />
           <div
@@ -183,28 +185,25 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
             className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg sm:rounded-2xl"
           >
             <h2 id="custom-coin-title" className="text-lg font-semibold">
-              Add a personal coin
+              {t("dialogTitle")}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Only you can see this coin. Photos are resized to WebP to save space. Uploads use your
-              signed-in session (no service role key required).
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("dialogIntro")}</p>
 
             <form className="mt-4 flex flex-col gap-3" onSubmit={submit}>
                 <label className="text-sm font-medium">
-                  Name <span className="text-destructive">*</span>
+                  {t("name")} <span className="text-destructive">*</span>
                   <input
                     required
                     maxLength={200}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    placeholder="e.g. City anniversary piece"
+                    placeholder={t("namePlaceholder")}
                   />
                 </label>
 
                 <label className="text-sm font-medium">
-                  Country <span className="text-destructive">*</span>
+                  {t("country")} <span className="text-destructive">*</span>
                   <select
                     className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
                     value={selection}
@@ -215,25 +214,26 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                         {o.country}
                       </option>
                     ))}
-                    <option value="OT">Other (type country name below)</option>
+                    <option value="OT">{t("countryOther")}</option>
                   </select>
                 </label>
 
                 {isOther && (
                   <label className="text-sm font-medium">
-                    Country name
+                    {t("countryName")}
                     <input
                       value={otherCountry}
                       onChange={(e) => setOtherCountry(e.target.value)}
                       maxLength={120}
                       className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                      placeholder="e.g. United Kingdom"
+                      placeholder={t("countryOtherPlaceholder")}
                     />
                   </label>
                 )}
 
                 <label className="text-sm font-medium">
-                  Year <span className="text-muted-foreground">(optional)</span>
+                  {t("year")}{" "}
+                  <span className="text-muted-foreground">{t("optional")}</span>
                   <input
                     type="number"
                     min={1800}
@@ -241,12 +241,13 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
                     className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    placeholder="e.g. 2019"
+                    placeholder={t("yearPlaceholder")}
                   />
                 </label>
 
                 <label className="text-sm font-medium">
-                  Description <span className="text-muted-foreground">(optional)</span>
+                  {t("description")}{" "}
+                  <span className="text-muted-foreground">{t("optional")}</span>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -258,7 +259,7 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
 
                 <div className="text-sm font-medium">
                   <span className="text-foreground">
-                    Photo <span className="text-destructive">*</span>
+                    {t("photo")} <span className="text-destructive">*</span>
                   </span>
                   <input
                     ref={fileInputRef}
@@ -299,14 +300,14 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                     className={cn(
                       "group relative mt-2 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
                       dragging
-                        ? "border-violet-500 bg-violet-100/60 text-violet-950"
-                        : "border-muted-foreground/25 bg-muted/20 hover:border-violet-400/60 hover:bg-violet-50/40",
+                        ? "border-violet-500 bg-violet-100/60 text-violet-950 dark:border-violet-400 dark:bg-violet-950/50 dark:text-violet-50"
+                        : "border-muted-foreground/25 bg-muted/20 hover:border-violet-400/60 hover:bg-violet-50/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-950/25",
                       loading && "pointer-events-none opacity-60"
                     )}
                   >
                     {previewUrl ? (
                       <>
-                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-violet-200 shadow-sm">
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-violet-200 shadow-sm dark:border-violet-500/40">
                           <img
                             src={previewUrl}
                             alt=""
@@ -315,14 +316,12 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                         </div>
                         <div className="max-w-full space-y-0.5">
                           <p className="truncate text-xs font-medium text-foreground">
-                            {imageFile?.name ?? "Selected image"}
+                            {imageFile?.name ?? t("selectedImage")}
                           </p>
                           {imageFile && (
                             <p className="text-xs text-muted-foreground">{formatBytes(imageFile.size)}</p>
                           )}
-                          <p className="text-xs text-muted-foreground">
-                            Click or drop to replace · JPEG, PNG, WebP, GIF
-                          </p>
+                          <p className="text-xs text-muted-foreground">{t("replaceHint")}</p>
                         </div>
                         <button
                           type="button"
@@ -331,25 +330,23 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
                             clearImage();
                           }}
                           className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 text-muted-foreground shadow-sm ring-1 ring-border transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Remove image"
+                          aria-label={t("removeImage")}
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </>
                     ) : (
                       <>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-violet-700 ring-4 ring-violet-50 transition-transform group-hover:scale-105">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-violet-700 ring-4 ring-violet-50 transition-transform group-hover:scale-105 dark:bg-violet-800/60 dark:text-violet-100 dark:ring-violet-950/80">
                           <ImagePlus className="h-6 w-6" aria-hidden />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-medium text-foreground">
-                            Drop your coin photo here
-                          </p>
+                          <p className="text-sm font-medium text-foreground">{t("dropPhoto")}</p>
                           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                             <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            or click to browse
+                            {t("browse")}
                           </p>
-                          <p className="text-[11px] text-muted-foreground/90">JPEG, PNG, WebP, or GIF</p>
+                          <p className="text-[11px] text-muted-foreground/90">{t("formatsShort")}</p>
                         </div>
                       </>
                     )}
@@ -364,10 +361,10 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
 
                 <div className="mt-2 flex justify-end gap-2">
                   <Button type="button" variant="ghost" disabled={loading} onClick={() => setOpen(false)}>
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   <Button type="submit" disabled={loading}>
-                    {loading ? "Saving…" : "Save coin"}
+                    {loading ? t("saving") : t("save")}
                   </Button>
                 </div>
               </form>

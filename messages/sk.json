@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "title": "EuroTracker — zbierka dvojeurových mincí",
+    "description": "Sledujte svoju zbierku dvojeurových mincí. Prehliadajte všetky štandardné aj pamätné 2 € mince zoradené podľa krajiny."
+  },
+  "landing": {
+    "title": "EuroTracker",
+    "heroLine1": "Sledujte svoju zbierku dvojeurových mincí — štandardné motívy aj pamätné vydania zo všetkých krajín eurozóny.",
+    "heroLine2": "Viac ako 500 mincí na objavovanie. Prehľadávajte podľa krajiny, označte, čo vlastníte, a sledujte rast svojej zbierky.",
+    "signInFailed": "Prihlásenie zlyhalo. Skúste to znova.",
+    "signInGoogle": "Prihlásiť sa cez Google",
+    "featureAllCountriesTitle": "Všetky krajiny",
+    "featureAllCountriesText": "Všetky krajiny eurozóny plus Monako, San Maríno, Vatikán a Andorra.",
+    "featureManyCoinsTitle": "500+ mincí",
+    "featureManyCoinsText": "Štandardné motívy a stovky pamätných vydaní podľa rokov.",
+    "featureOneClickTitle": "Označenie jedným klikom",
+    "featureOneClickText": "Kliknite na mincu a označte ju ako vlastnenú. Zmeny sa okamžite synchronizujú.",
+    "footer": "EuroTracker — postavené na Next.js a Supabase"
+  },
+  "collection": {
+    "title": "Moja zbierka",
+    "subtitle": "Kliknite na katalógovú mincu a označte ju ako vlastnenú. Osobné mince vidíte len vy.",
+    "signOut": "Odhlásiť sa",
+    "coinsLabel": "mincí",
+    "personalBadge": "({count, plural, one {# osobná} few {# osobné} other {# osobných}})",
+    "progressTitle": "Celkový postup",
+    "progressHint": "Celkový počet zahŕňa celý katalóg ({catalogTotal} mincí) aj vaše osobné mince.",
+    "personalCoinsNone": "Zatiaľ ste nepridali žiadne osobné mince.",
+    "personalCoinsOne": "Pridali ste 1 osobnú mincu.",
+    "personalCoinsMany": "Pridali ste {count} osobných mincí.",
+    "jumpToCountry": "Prejsť na krajinu"
+  },
+  "auth": {
+    "signInWithEmail": "Prihlásiť sa e-mailom",
+    "signIn": "Prihlásenie",
+    "createAccount": "Vytvoriť účet",
+    "email": "E-mail",
+    "password": "Heslo",
+    "cancel": "Zrušiť",
+    "pleaseWait": "Čakajte prosím…",
+    "submitSignIn": "Prihlásiť sa",
+    "submitCreate": "Vytvoriť účet",
+    "emailConfirmHint": "Tento projekt stále vyžaduje potvrdenie e-mailom. V Supabase: Authentication → Providers → Email → vypnite „Confirm email“, kým nepridáte tok potvrdenia."
+  },
+  "coinCard": {
+    "standard": "Štandardná",
+    "commemorative": "Pamätná",
+    "coinImageAlt": "{country} {year} {description}"
+  },
+  "customCoinCard": {
+    "personal": "Osobná",
+    "deleteTitle": "Odstrániť túto mincu",
+    "deleteAria": "Odstrániť osobnú mincu",
+    "confirmDelete": "Odstrániť „{name}“? Túto akciu nie je možné vrátiť späť.",
+    "deleteFailed": "Mincu sa nepodarilo odstrániť."
+  },
+  "addCoin": {
+    "button": "Pridať osobnú mincu",
+    "dialogTitle": "Pridať osobnú mincu",
+    "dialogIntro": "Túto mincu vidíte len vy. Fotografie sa zmenšia do WebP, aby šetrili miesto. Nahrávanie používa vašu prihlásenú reláciu (nie je potrebný service role kľúč).",
+    "name": "Názov",
+    "country": "Krajina",
+    "countryOther": "Iné (nižšie zadajte názov krajiny)",
+    "countryName": "Názov krajiny",
+    "countryOtherPlaceholder": "napr. Spojené kráľovstvo",
+    "countryOtherError": "Zadajte názov krajiny pri voľbe „Iné“.",
+    "year": "Rok",
+    "optional": "(voliteľné)",
+    "yearPlaceholder": "napr. 2019",
+    "description": "Popis",
+    "photo": "Fotografia",
+    "namePlaceholder": "napr. Pamätná minca k výročiu mesta",
+    "invalidImageType": "Použite obrázok vo formáte JPEG, PNG, WebP alebo GIF.",
+    "missingPhoto": "Pridajte fotografiu mince kliknutím alebo pretiahnutím súboru sem.",
+    "dropPhoto": "Pretiahnite sem fotografiu mince",
+    "browse": "alebo kliknite a vyberte súbor",
+    "formatsShort": "JPEG, PNG, WebP alebo GIF",
+    "replaceHint": "Kliknutím alebo pretiahnutím nahradíte · JPEG, PNG, WebP, GIF",
+    "selectedImage": "Vybraný obrázok",
+    "removeImage": "Odstrániť obrázok",
+    "close": "Zavrieť",
+    "cancel": "Zrušiť",
+    "save": "Uložiť mincu",
+    "saving": "Ukladá sa…",
+    "saveFailed": "Mincu sa nepodarilo uložiť."
+  },
+  "theme": {
+    "groupLabel": "Farebná téma",
+    "light": "Svetlá téma",
+    "dark": "Tmavá téma",
+    "system": "Podľa systému"
+  },
+  "language": {
+    "label": "Jazyk",
+    "en": "English",
+    "sk": "Slovenčina"
+  }
+}

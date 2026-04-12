@@ -2,20 +2,38 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+const LOCALES = ["en", "sk"] as const;
+
+function preferredLocale(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const v = cookieStore.get("NEXT_LOCALE")?.value;
+  return v === "sk" ? "sk" : "en";
+}
+
+function isSafeLocalizedPath(path: string) {
+  return LOCALES.some(
+    (loc) => path === `/${loc}` || path.startsWith(`/${loc}/`)
+  );
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const { searchParams, origin } = url;
   const code = searchParams.get("code");
-  let next = searchParams.get("next") ?? "/collection";
+  const cookieStore = await cookies();
+  const locale = preferredLocale(cookieStore);
+
+  let next = searchParams.get("next") ?? `/${locale}/collection`;
   if (!next.startsWith("/")) {
-    next = "/collection";
+    next = `/${locale}/collection`;
+  }
+  if (!isSafeLocalizedPath(next)) {
+    next = `/${locale}/collection`;
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/?error=auth`);
+    return NextResponse.redirect(`${origin}/${locale}?error=auth`);
   }
 
-  const cookieStore = await cookies();
   const redirectTo = new URL(next, origin).toString();
   const response = NextResponse.redirect(redirectTo, 302);
 
@@ -38,7 +56,7 @@ export async function GET(request: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(`${origin}/?error=auth`);
+    return NextResponse.redirect(`${origin}/${locale}?error=auth`);
   }
 
   return response;

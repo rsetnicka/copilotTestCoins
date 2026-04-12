@@ -1,43 +1,54 @@
-import { redirect } from "next/navigation";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { redirect } from "@/i18n/navigation";
 import { EmailAuthPanel } from "@/components/EmailAuthPanel";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LandingPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (user) redirect("/collection");
+  if (user) redirect({ href: "/collection", locale });
 
-  const params = await searchParams;
-  const hasError = params.error === "auth";
+  const t = await getTranslations("landing");
+  const paramsResolved = await searchParams;
+  const hasError = paramsResolved.error === "auth";
 
   return (
-    <main className="flex min-h-screen flex-col">
-      {/* Hero */}
+    <main className="relative flex min-h-screen flex-col">
+      <div className="absolute right-3 top-3 z-20 flex items-center gap-2 sm:right-5 sm:top-5">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
+
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-400 text-4xl font-bold text-yellow-900 shadow-lg">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-4xl font-bold text-amber-950 shadow-lg shadow-amber-900/20 ring-1 ring-amber-600/20 dark:shadow-[0_12px_40px_rgba(251,191,36,0.22)] dark:ring-amber-400/30">
           €2
         </div>
 
         <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-          EuroTracker
+          {t("title")}
         </h1>
         <p className="mb-2 max-w-xl text-lg text-muted-foreground">
-          Track your 2 euro coin collection — standard designs and commemorative
-          editions from all Eurozone countries.
+          {t("heroLine1")}
         </p>
-        <p className="mb-10 text-sm text-muted-foreground">
-          Over 500 coins to discover. Browse by country, toggle what you own,
-          and watch your collection grow.
-        </p>
+        <p className="mb-10 text-sm text-muted-foreground">{t("heroLine2")}</p>
 
         {hasError && (
           <p className="mb-4 rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            Sign-in failed. Please try again.
+            {t("signInFailed")}
           </p>
         )}
 
@@ -64,30 +75,29 @@ export default async function LandingPage({
                 fill="#EA4335"
               />
             </svg>
-            Sign in with Google
+            {t("signInGoogle")}
           </a>
           <EmailAuthPanel />
         </div>
       </div>
 
-      {/* Features */}
       <div className="border-t bg-muted/30 px-4 py-16">
         <div className="mx-auto grid max-w-4xl gap-8 sm:grid-cols-3">
           {[
             {
               icon: "🗺️",
-              title: "All countries",
-              text: "Every Eurozone country plus Monaco, San Marino, Vatican & Andorra.",
+              title: t("featureAllCountriesTitle"),
+              text: t("featureAllCountriesText"),
             },
             {
               icon: "🪙",
-              title: "500+ coins",
-              text: "Standard designs and hundreds of commemorative editions by year.",
+              title: t("featureManyCoinsTitle"),
+              text: t("featureManyCoinsText"),
             },
             {
               icon: "✅",
-              title: "One click to track",
-              text: "Tap any coin to mark it as owned. Your collection syncs instantly.",
+              title: t("featureOneClickTitle"),
+              text: t("featureOneClickText"),
             },
           ].map(({ icon, title, text }) => (
             <div key={title} className="text-center">
@@ -100,7 +110,7 @@ export default async function LandingPage({
       </div>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        EuroTracker — built with Next.js &amp; Supabase
+        {t("footer")}
       </footer>
     </main>
   );

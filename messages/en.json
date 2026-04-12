@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "title": "EuroTracker — 2 Euro coin collection",
+    "description": "Track your 2 euro coin collection. Browse all standard and commemorative 2 euro coins grouped by country."
+  },
+  "landing": {
+    "title": "EuroTracker",
+    "heroLine1": "Track your 2 euro coin collection — standard designs and commemorative editions from all euro area countries.",
+    "heroLine2": "Over 500 coins to discover. Browse by country, toggle what you own, and watch your collection grow.",
+    "signInFailed": "Sign-in failed. Please try again.",
+    "signInGoogle": "Sign in with Google",
+    "featureAllCountriesTitle": "All countries",
+    "featureAllCountriesText": "Every euro area country plus Monaco, San Marino, Vatican City, and Andorra.",
+    "featureManyCoinsTitle": "500+ coins",
+    "featureManyCoinsText": "Standard designs and hundreds of commemorative editions by year.",
+    "featureOneClickTitle": "One click to track",
+    "featureOneClickText": "Tap any coin to mark it as owned. Your collection syncs instantly.",
+    "footer": "EuroTracker — built with Next.js and Supabase"
+  },
+  "collection": {
+    "title": "My collection",
+    "subtitle": "Click any catalog coin to mark it as owned. Personal coins are only visible to you.",
+    "signOut": "Sign out",
+    "coinsLabel": "coins",
+    "personalBadge": "({count} personal)",
+    "progressTitle": "Overall progress",
+    "progressHint": "Total includes the full catalog ({catalogTotal} coins) plus your personal coins.",
+    "personalCoinsNone": "You have not added any personal coins.",
+    "personalCoinsOne": "You have added one personal coin.",
+    "personalCoinsMany": "You have added {count} personal coins.",
+    "jumpToCountry": "Jump to country"
+  },
+  "auth": {
+    "signInWithEmail": "Sign in with email",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "cancel": "Cancel",
+    "pleaseWait": "Please wait…",
+    "submitSignIn": "Sign in",
+    "submitCreate": "Create account",
+    "emailConfirmHint": "This project still requires email confirmation. In Supabase: Authentication → Providers → Email → turn off \"Confirm email\" until you add a confirmation flow."
+  },
+  "coinCard": {
+    "standard": "Standard",
+    "commemorative": "Commemorative",
+    "coinImageAlt": "{country} {year} {description}"
+  },
+  "customCoinCard": {
+    "personal": "Personal",
+    "deleteTitle": "Delete this coin",
+    "deleteAria": "Delete personal coin",
+    "confirmDelete": "Delete “{name}”? This cannot be undone.",
+    "deleteFailed": "Could not delete coin."
+  },
+  "addCoin": {
+    "button": "Add personal coin",
+    "dialogTitle": "Add a personal coin",
+    "dialogIntro": "Only you can see this coin. Photos are resized to WebP to save space. Uploads use your signed-in session (no service role key required).",
+    "name": "Name",
+    "country": "Country",
+    "countryOther": "Other (enter country name below)",
+    "countryName": "Country name",
+    "countryOtherPlaceholder": "e.g. United Kingdom",
+    "countryOtherError": "Enter the country name for “Other”.",
+    "year": "Year",
+    "optional": "(optional)",
+    "yearPlaceholder": "e.g. 2019",
+    "description": "Description",
+    "photo": "Photo",
+    "namePlaceholder": "e.g. City anniversary piece",
+    "invalidImageType": "Please use a JPEG, PNG, WebP, or GIF image.",
+    "missingPhoto": "Add a coin photo by clicking or dragging a file here.",
+    "dropPhoto": "Drop your coin photo here",
+    "browse": "or click to browse",
+    "formatsShort": "JPEG, PNG, WebP, or GIF",
+    "replaceHint": "Click or drop to replace · JPEG, PNG, WebP, GIF",
+    "selectedImage": "Selected image",
+    "removeImage": "Remove image",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save coin",
+    "saving": "Saving…",
+    "saveFailed": "Could not save coin."
+  },
+  "theme": {
+    "groupLabel": "Color theme",
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "Use system theme"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "sk": "Slovenčina"
+  }
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { db } from "@/db";
+import { revalidateCollectionPages } from "@/lib/revalidate-collection";
 import { userCollections } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
 import { and, eq } from "drizzle-orm";
@@ -35,10 +35,10 @@ export async function POST(request: Request) {
           eq(userCollections.coinId, coinId)
         )
       );
-    revalidatePath("/collection");
+    revalidateCollectionPages();
     return NextResponse.json({ owned: false });
   }
   await db.insert(userCollections).values({ userId: user.id, coinId });
-  revalidatePath("/collection");
+  revalidateCollectionPages();
   return NextResponse.json({ owned: true });
 }

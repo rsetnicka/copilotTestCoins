@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
+import { revalidateCollectionPages } from "@/lib/revalidate-collection";
 import { db } from "@/db";
 import { coins, userCustomCoins } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not save coin." }, { status: 500 });
   }
 
-  revalidatePath("/collection");
+  revalidateCollectionPages();
   return NextResponse.json({ ok: true, id });
 }
 
@@ -170,6 +170,6 @@ export async function DELETE(request: Request) {
     console.error("custom-coins storage remove:", rmErr.message);
   }
 
-  revalidatePath("/collection");
+  revalidateCollectionPages();
   return NextResponse.json({ ok: true });
 }

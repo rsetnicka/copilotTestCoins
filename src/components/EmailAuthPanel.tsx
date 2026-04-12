@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function EmailAuthPanel() {
   const router = useRouter();
+  const t = useTranslations("auth");
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -36,9 +38,7 @@ export function EmailAuthPanel() {
         return;
       }
       if (!data.session) {
-        setMessage(
-          'This project still requires email confirmation. In Supabase: Authentication → Providers → Email → turn off "Confirm email" until you add a confirmation flow.'
-        );
+        setMessage(t("emailConfirmHint"));
         return;
       }
       router.refresh();
@@ -74,7 +74,7 @@ export function EmailAuthPanel() {
             setMessage(null);
           }}
         >
-          Sign in with email
+          {t("signInWithEmail")}
         </Button>
       ) : (
         <form
@@ -95,7 +95,7 @@ export function EmailAuthPanel() {
                 setMessage(null);
               }}
             >
-              Sign in
+              {t("signIn")}
             </button>
             <button
               type="button"
@@ -110,13 +110,13 @@ export function EmailAuthPanel() {
                 setMessage(null);
               }}
             >
-              Create account
+              {t("createAccount")}
             </button>
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="email-auth-email" className="text-sm font-medium">
-              Email
+              {t("email")}
             </label>
             <input
               id="email-auth-email"
@@ -132,7 +132,7 @@ export function EmailAuthPanel() {
 
           <div className="space-y-1.5">
             <label htmlFor="email-auth-password" className="text-sm font-medium">
-              Password
+              {t("password")}
             </label>
             <input
               id="email-auth-password"
@@ -163,10 +163,14 @@ export function EmailAuthPanel() {
                 setMessage(null);
               }}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
+              {loading
+                ? t("pleaseWait")
+                : mode === "signup"
+                  ? t("submitCreate")
+                  : t("submitSignIn")}
             </Button>
           </div>
         </form>

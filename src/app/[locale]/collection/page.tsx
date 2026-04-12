@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
+import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { coins, userCollections, userCustomCoins } from "@/db/schema";
@@ -7,6 +8,8 @@ import { CountrySection, type CountryGridEntry } from "@/components/CountrySecti
 import { AddCustomCoinDialog } from "@/components/AddCustomCoinDialog";
 import { customCoinPublicUrl } from "@/lib/custom-coin-public-url";
 import { LogOut, Coins } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -16,22 +19,37 @@ type CountryGroup = {
   entries: CountryGridEntry[];
 };
 
-export default async function CollectionPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/");
+export default async function CollectionPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
 
-  // Fetch catalog, collection, custom coins, and country list in parallel
+  const t = await getTranslations("collection");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect({ href: "/", locale });
+  }
+
+  const sessionUser = user as NonNullable<typeof user>;
+  const userId = sessionUser.id;
+
   const [allCoins, userOwned, customCoins, countryRows] = await Promise.all([
     db.select().from(coins).orderBy(asc(coins.sortOrder), asc(coins.year)),
     db
       .select({ coinId: userCollections.coinId })
       .from(userCollections)
-      .where(eq(userCollections.userId, user.id)),
+      .where(eq(userCollections.userId, userId)),
     db
       .select()
       .from(userCustomCoins)
-      .where(eq(userCustomCoins.userId, user.id))
+      .where(eq(userCustomCoins.userId, userId))
       .orderBy(asc(userCustomCoins.createdAt)),
     db
       .selectDistinct({ country: coins.country, countryCode: coins.countryCode })
@@ -99,69 +117,67 @@ export default async function CollectionPage() {
 
   async function signOut() {
     "use server";
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect("/");
+    const supabaseSignOut = await createClient();
+    await supabaseSignOut.auth.signOut();
+    const loc = await getLocale();
+    redirect({ href: "/", locale: loc });
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 text-sm font-bold text-yellow-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-sm font-bold text-amber-950 shadow-sm shadow-amber-900/15 ring-1 ring-amber-600/15 dark:shadow-[0_4px_20px_rgba(251,191,36,0.2)] dark:ring-amber-400/25">
               €2
             </span>
             <span className="font-semibold">EuroTracker</span>
           </div>
 
-          {/* Stats */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <Coins className="h-4 w-4 shrink-0" />
             <span>
               <span className="font-semibold text-foreground">{totalOwned}</span>
-              /{totalCoins} coins
+              /{totalCoins} {t("coinsLabel")}
             </span>
             <span className="text-xs text-violet-800/90">
-              ({customTotal} personal)
+              {t("personalBadge", { count: customTotal })}
             </span>
           </div>
 
-          {/* User name and Sign out */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-foreground">
-              {user.user_metadata?.full_name || user.email}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher className="hidden sm:inline-flex" />
+            <ThemeToggle className="hidden sm:inline-flex" />
+            <span className="hidden max-w-[140px] truncate text-sm font-medium text-foreground sm:inline md:max-w-[200px]">
+              {sessionUser.user_metadata?.full_name || sessionUser.email}
             </span>
+            <LanguageSwitcher className="sm:hidden" />
+            <ThemeToggle className="sm:hidden" />
             <form action={signOut}>
               <button
                 type="submit"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <LogOut className="h-4 w-4" />
-                Sign out
+                {t("signOut")}
               </button>
             </form>
           </div>
         </div>
       </header>
 
-      {/* Main */}
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">My Collection</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Click any catalog coin to mark it as owned. Personal coins are only visible to you.
-            </p>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
           </div>
           <AddCustomCoinDialog countryOptions={countryRows} />
         </div>
 
-        {/* Overall progress */}
         <div className="mb-8 rounded-xl border bg-card p-5 shadow-sm">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="font-medium">Overall progress</span>
+            <span className="font-medium">{t("progressTitle")}</span>
             <span className="text-muted-foreground">
               {totalOwned} / {totalCoins} ({progressLabel})
             </span>
@@ -173,20 +189,19 @@ export default async function CollectionPage() {
             />
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Total includes the full catalog ({catalogTotal} coins) plus your personal coins.{" "}
+            {t("progressHint", { catalogTotal })}{" "}
             {customTotal === 0 ? (
-              <>You have not added any personal coins.</>
+              <>{t("personalCoinsNone")}</>
             ) : customTotal === 1 ? (
-              <>You have added 1 personal coin.</>
+              <>{t("personalCoinsOne")}</>
             ) : (
-              <>You have added {customTotal} personal coins.</>
+              <>{t("personalCoinsMany", { count: customTotal })}</>
             )}
           </p>
         </div>
 
-        {/* Country groups with right-side navigation */}
         <div className="flex gap-8">
-          <div className="flex-1 flex flex-col gap-4">
+          <div className="flex flex-1 flex-col gap-4">
             {groups.map((group) => (
               <CountrySection
                 key={group.country}
@@ -198,20 +213,24 @@ export default async function CollectionPage() {
             ))}
           </div>
 
-          {/* Right-side country nav (hidden on small screens) */}
-          <aside className="hidden xl:block w-56 shrink-0">
+          <aside className="hidden w-56 shrink-0 xl:block">
             <div className="sticky top-24">
-              <h3 className="mb-2 text-sm font-semibold">Jump to country</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t("jumpToCountry")}</h3>
               <nav className="flex max-h-[60vh] flex-col gap-1 overflow-auto pr-2 text-sm">
                 {groups.map((g) => {
-                  const slug = g.country.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                  const slug = g.country
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
                   return (
                     <a
                       key={g.country}
                       href={`#${slug}`}
                       className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/40"
                     >
-                      <span className="inline-flex h-5 w-8 items-center justify-center rounded-sm bg-muted/20 text-[11px] font-medium">{g.countryCode}</span>
+                      <span className="inline-flex h-5 w-8 items-center justify-center rounded-sm bg-muted/20 text-[11px] font-medium">
+                        {g.countryCode}
+                      </span>
                       <span className="truncate">{g.country}</span>
                     </a>
                   );
