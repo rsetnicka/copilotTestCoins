@@ -51,7 +51,9 @@
     "personal": "Osobná",
     "deleteTitle": "Odstrániť túto mincu",
     "deleteAria": "Odstrániť osobnú mincu",
-    "confirmDelete": "Odstrániť „{name}“? Túto akciu nie je možné vrátiť späť.",
+    "deleteDialogTitle": "Odstrániť túto osobnú mincu?",
+    "deleteDialogDescription": "Minca „{name}“ sa odstráni zo zbierky. Túto akciu nie je možné vrátiť späť.",
+    "deleteConfirm": "Odstrániť",
     "deleteFailed": "Mincu sa nepodarilo odstrániť."
   },
   "addCoin": {

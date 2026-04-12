@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { UserCustomCoin } from "@/db/schema";
 
 interface CustomCoinCardProps {
@@ -17,10 +18,12 @@ interface CustomCoinCardProps {
 export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
   const router = useRouter();
   const t = useTranslations("customCoinCard");
+  const tAuth = useTranslations("auth");
+  const tAddCoin = useTranslations("addCoin");
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  async function remove() {
-    if (!window.confirm(t("confirmDelete", { name: row.name }))) return;
+  async function performDelete() {
     setLoading(true);
     try {
       const res = await fetch(`/api/custom-coins?id=${encodeURIComponent(row.id)}`, {
@@ -31,6 +34,7 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
         window.alert((j as { error?: string }).error ?? t("deleteFailed"));
         return;
       }
+      setDeleteDialogOpen(false);
       startTransition(() => {
         router.refresh();
       });
@@ -40,18 +44,21 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
   }
 
   const alt = [row.country, row.year, row.name].filter(Boolean).join(" · ");
+  const deleteTitleId = `delete-custom-coin-title-${row.id}`;
+  const deleteDescId = `delete-custom-coin-desc-${row.id}`;
 
   return (
+    <>
     <div
       className={cn(
         "group relative z-0 flex flex-col gap-1.5 rounded-xl border-2 border-violet-200 bg-violet-50/50 p-3 text-left shadow-sm dark:border-violet-500/35 dark:bg-violet-950/40 dark:shadow-violet-950/30",
         "hover:z-10 hover:shadow-md",
-        loading && "pointer-events-none opacity-60"
+        loading && !deleteDialogOpen && "pointer-events-none opacity-60"
       )}
     >
       <button
         type="button"
-        onClick={remove}
+        onClick={() => setDeleteDialogOpen(true)}
         disabled={loading}
         className="absolute right-2 top-2 z-20 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         title={t("deleteTitle")}
@@ -114,5 +121,39 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
         {t("personal")}
       </Badge>
     </div>
+
+    {deleteDialogOpen && (
+      <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/40 dark:bg-black/60"
+          aria-label={tAddCoin("close")}
+          onClick={() => !loading && setDeleteDialogOpen(false)}
+        />
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescId}
+          className="relative z-10 mx-4 w-full max-w-md rounded-t-2xl border bg-background p-6 shadow-lg sm:rounded-2xl"
+        >
+          <h2 id={deleteTitleId} className="text-lg font-semibold">
+            {t("deleteDialogTitle")}
+          </h2>
+          <p id={deleteDescId} className="mt-2 text-sm text-muted-foreground">
+            {t("deleteDialogDescription", { name: row.name })}
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" variant="ghost" disabled={loading} onClick={() => setDeleteDialogOpen(false)}>
+              {tAuth("cancel")}
+            </Button>
+            <Button type="button" variant="destructive" disabled={loading} onClick={() => void performDelete()}>
+              {loading ? tAuth("pleaseWait") : t("deleteConfirm")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

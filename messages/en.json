@@ -51,7 +51,9 @@
     "personal": "Personal",
     "deleteTitle": "Delete this coin",
     "deleteAria": "Delete personal coin",
-    "confirmDelete": "Delete “{name}”? This cannot be undone.",
+    "deleteDialogTitle": "Delete this personal coin?",
+    "deleteDialogDescription": "“{name}” will be removed from your collection. This cannot be undone.",
+    "deleteConfirm": "Delete",
     "deleteFailed": "Could not delete coin."
   },
   "addCoin": {
