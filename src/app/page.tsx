@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmailAuthPanel } from "@/components/EmailAuthPanel";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LandingPage({
@@ -13,21 +14,6 @@ export default async function LandingPage({
 
   const params = await searchParams;
   const hasError = params.error === "auth";
-
-  async function signInWithGoogle() {
-    "use server";
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
-      },
-    });
-    if (data.url) {
-      redirect(data.url);
-    }
-    if (error) redirect("/?error=auth");
-  }
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -55,12 +41,12 @@ export default async function LandingPage({
           </p>
         )}
 
-        <form action={signInWithGoogle}>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-3 rounded-xl border border-input bg-background px-6 py-3 text-base font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <div className="flex w-full max-w-sm flex-col items-center gap-3">
+          <a
+            href="/auth/google"
+            className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-6 py-3 text-base font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" aria-hidden="true">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -79,8 +65,9 @@ export default async function LandingPage({
               />
             </svg>
             Sign in with Google
-          </button>
-        </form>
+          </a>
+          <EmailAuthPanel />
+        </div>
       </div>
 
       {/* Features */}

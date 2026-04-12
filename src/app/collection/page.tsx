@@ -1,18 +1,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { coins, userCollections } from "@/db/schema";
+import { coins, userCollections, userCustomCoins } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
-import { CountrySection } from "@/components/CountrySection";
+import { CountrySection, type CountryGridEntry } from "@/components/CountrySection";
+import { AddCustomCoinDialog } from "@/components/AddCustomCoinDialog";
+import { customCoinPublicUrl } from "@/lib/custom-coin-public-url";
 import { LogOut, Coins } from "lucide-react";
-import type { Coin } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
 type CountryGroup = {
   country: string;
   countryCode: string;
-  coins: Coin[];
+  entries: CountryGridEntry[];
 };
 
 export default async function CollectionPage() {
@@ -20,33 +21,77 @@ export default async function CollectionPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  // Fetch all coins and user's collection in parallel
-  const [allCoins, userOwned] = await Promise.all([
+  // Fetch catalog, collection, custom coins, and country list in parallel
+  const [allCoins, userOwned, customCoins, countryRows] = await Promise.all([
     db.select().from(coins).orderBy(asc(coins.sortOrder), asc(coins.year)),
     db
       .select({ coinId: userCollections.coinId })
       .from(userCollections)
       .where(eq(userCollections.userId, user.id)),
+    db
+      .select()
+      .from(userCustomCoins)
+      .where(eq(userCustomCoins.userId, user.id))
+      .orderBy(asc(userCustomCoins.createdAt)),
+    db
+      .selectDistinct({ country: coins.country, countryCode: coins.countryCode })
+      .from(coins)
+      .orderBy(asc(coins.country)),
   ]);
 
   const ownedIds = new Set(userOwned.map((r) => r.coinId));
 
-  // Group by country, preserving sortOrder-based country order
   const groupMap = new Map<string, CountryGroup>();
   for (const coin of allCoins) {
     if (!groupMap.has(coin.country)) {
       groupMap.set(coin.country, {
         country: coin.country,
         countryCode: coin.countryCode,
-        coins: [],
+        entries: [],
       });
     }
-    groupMap.get(coin.country)!.coins.push(coin);
+    groupMap.get(coin.country)!.entries.push({ variant: "catalog", coin });
   }
-  const groups = Array.from(groupMap.values());
 
-  const totalCoins = allCoins.length;
-  const totalOwned = ownedIds.size;
+  for (const row of customCoins) {
+    if (!groupMap.has(row.country)) {
+      groupMap.set(row.country, {
+        country: row.country,
+        countryCode: row.countryCode,
+        entries: [],
+      });
+    }
+    groupMap.get(row.country)!.entries.push({
+      variant: "custom",
+      row,
+      imageUrl: customCoinPublicUrl(row.imagePath),
+    });
+  }
+
+  const countryOrder: string[] = [];
+  const seenCountry = new Set<string>();
+  for (const c of allCoins) {
+    if (!seenCountry.has(c.country)) {
+      seenCountry.add(c.country);
+      countryOrder.push(c.country);
+    }
+  }
+  for (const row of customCoins) {
+    if (!seenCountry.has(row.country)) {
+      seenCountry.add(row.country);
+      countryOrder.push(row.country);
+    }
+  }
+
+  const groups = countryOrder.map((name) => groupMap.get(name)!);
+
+  const catalogTotal = allCoins.length;
+  const customTotal = customCoins.length;
+  const totalCoins = catalogTotal + customTotal;
+  const catalogOwned = ownedIds.size;
+  const totalOwned = catalogOwned + customTotal;
+  const progressPct =
+    totalCoins > 0 ? Math.round((totalOwned / totalCoins) * 100) : 0;
 
   async function signOut() {
     "use server";
@@ -68,11 +113,14 @@ export default async function CollectionPage() {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Coins className="h-4 w-4" />
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <Coins className="h-4 w-4 shrink-0" />
             <span>
               <span className="font-semibold text-foreground">{totalOwned}</span>
               /{totalCoins} coins
+            </span>
+            <span className="text-xs text-violet-800/90">
+              ({customTotal} personal)
             </span>
           </div>
 
@@ -96,27 +144,40 @@ export default async function CollectionPage() {
 
       {/* Main */}
       <main className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">My Collection</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Click any coin to mark it as owned. Coins are grouped by country.
-          </p>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">My Collection</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Click any catalog coin to mark it as owned. Personal coins are only visible to you.
+            </p>
+          </div>
+          <AddCustomCoinDialog countryOptions={countryRows} />
         </div>
 
         {/* Overall progress */}
         <div className="mb-8 rounded-xl border bg-card p-5 shadow-sm">
-          <div className="mb-2 flex items-center justify-between text-sm">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="font-medium">Overall progress</span>
             <span className="text-muted-foreground">
-              {totalOwned} / {totalCoins} ({Math.round((totalOwned / totalCoins) * 100)}%)
+              {totalOwned} / {totalCoins} ({progressPct}%)
             </span>
           </div>
           <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
             <div
               className="h-full rounded-full bg-yellow-400 transition-all duration-500"
-              style={{ width: `${(totalOwned / totalCoins) * 100}%` }}
+              style={{ width: `${progressPct}%` }}
             />
           </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Total includes the full catalog ({catalogTotal} coins) plus your personal coins.{" "}
+            {customTotal === 0 ? (
+              <>You have not added any personal coins.</>
+            ) : customTotal === 1 ? (
+              <>You have added 1 personal coin.</>
+            ) : (
+              <>You have added {customTotal} personal coins.</>
+            )}
+          </p>
         </div>
 
         {/* Country groups with right-side navigation */}
@@ -127,7 +188,7 @@ export default async function CollectionPage() {
                 key={group.country}
                 country={group.country}
                 countryCode={group.countryCode}
-                coins={group.coins}
+                entries={group.entries}
                 ownedIds={ownedIds}
               />
             ))}

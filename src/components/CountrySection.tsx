@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { CoinCard } from "@/components/CoinCard";
+import { CustomCoinCard } from "@/components/CustomCoinCard";
 import { Progress } from "@/components/ui/progress";
-import type { Coin } from "@/db/schema";
+import type { Coin, UserCustomCoin } from "@/db/schema";
+
+export type CountryGridEntry =
+  | { variant: "catalog"; coin: Coin }
+  | { variant: "custom"; row: UserCustomCoin; imageUrl: string };
 
 const COUNTRY_FLAGS: Record<string, string> = {
   AD: "🇦🇩", AT: "🇦🇹", BE: "🇧🇪", CY: "🇨🇾", EE: "🇪🇪",
@@ -17,19 +22,21 @@ const COUNTRY_FLAGS: Record<string, string> = {
 interface CountrySectionProps {
   country: string;
   countryCode: string;
-  coins: Coin[];
+  entries: CountryGridEntry[];
   ownedIds: Set<string>;
 }
 
 export function CountrySection({
   country,
   countryCode,
-  coins,
+  entries,
   ownedIds,
 }: CountrySectionProps) {
   const [open, setOpen] = useState(true);
-  const ownedCount = coins.filter((c) => ownedIds.has(c.id)).length;
-  const total = coins.length;
+  const ownedCount = entries.filter((e) =>
+    e.variant === "catalog" ? ownedIds.has(e.coin.id) : true
+  ).length;
+  const total = entries.length;
   const pct = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
   const flag = COUNTRY_FLAGS[countryCode] ?? "🪙";
 
@@ -62,9 +69,13 @@ export function CountrySection({
       {open && (
         <div className="border-t px-5 pb-5 pt-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {coins.map((coin) => (
-              <CoinCard key={coin.id} coin={coin} owned={ownedIds.has(coin.id)} />
-            ))}
+            {entries.map((e) =>
+              e.variant === "catalog" ? (
+                <CoinCard key={e.coin.id} coin={e.coin} owned={ownedIds.has(e.coin.id)} />
+              ) : (
+                <CustomCoinCard key={e.row.id} row={e.row} imageUrl={e.imageUrl} />
+              )
+            )}
           </div>
         </div>
       )}

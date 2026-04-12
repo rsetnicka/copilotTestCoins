@@ -2,22 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+/**
+ * Starts Google OAuth with a full GET navigation (not a Server Action).
+ * PKCE cookies must be set on a top-level navigation response; browsers ignore
+ * Set-Cookie on fetch() (Server Action) responses.
+ */
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const { searchParams, origin } = url;
-  const code = searchParams.get("code");
-  let next = searchParams.get("next") ?? "/collection";
-  if (!next.startsWith("/")) {
-    next = "/collection";
-  }
-
-  if (!code) {
-    return NextResponse.redirect(`${origin}/?error=auth`);
-  }
-
+  const { origin } = new URL(request.url);
   const cookieStore = await cookies();
-  const redirectTo = new URL(next, origin).toString();
-  const response = NextResponse.redirect(redirectTo, 302);
+
+  const response = NextResponse.redirect(`${origin}/?error=auth`, 302);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,10 +30,17 @@ export async function GET(request: Request) {
     },
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
-    return NextResponse.redirect(`${origin}/?error=auth`);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  });
+
+  if (error || !data.url) {
+    return response;
   }
 
+  response.headers.set("Location", data.url);
   return response;
 }
