@@ -63,7 +63,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       {/* Coin image — overflow-visible so scaled coin pops out of card */}
       <div
         className={cn(
-          "group/coin relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
+          "relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
           owned
             ? "border-amber-400/90 dark:border-amber-400/80"
             : "border-muted group-hover:border-yellow-300 dark:group-hover:border-amber-500/50"
@@ -77,21 +77,24 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
               year: String(coin.year),
               description: coin.description,
             })}
-            width={64}
-            height={64}
+            width={256}
+            height={256}
+            sizes="64px"
             className={cn(
-              "h-full w-full rounded-full object-cover",
-              "transition-[transform,filter] duration-300 ease-out",
-              "group-hover/coin:scale-[4]",
-              "group-hover/coin:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
+              "h-full w-full origin-center rounded-full object-cover",
+              /* Transform only — animating filter blurs the layer; drop-shadow applies without transition */
+              "transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0",
+              "group-hover:scale-[4]",
+              "group-hover:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
             )}
             unoptimized
           />
         ) : (
           <div
             className={cn(
-              "flex h-full w-full items-center justify-center rounded-full text-sm font-bold",
-              "transition-transform duration-300 ease-out group-hover/coin:scale-[4]",
+              "flex h-full w-full origin-center items-center justify-center rounded-full text-sm font-bold",
+              "transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0",
+              "group-hover:scale-[4]",
               owned
                 ? "bg-amber-100 text-amber-950 dark:bg-amber-500/35 dark:text-amber-100"
                 : "bg-muted/40 text-muted-foreground group-hover:bg-yellow-100 dark:group-hover:bg-amber-950/30"

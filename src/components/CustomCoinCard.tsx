@@ -69,28 +69,30 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
 
       <div
         className={cn(
-          "group/coin relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-violet-300 transition-colors hover:z-50 dark:border-violet-400/45"
+          "relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-violet-300 transition-colors hover:z-50 dark:border-violet-400/45"
         )}
       >
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={alt}
-            width={64}
-            height={64}
+            width={256}
+            height={256}
+            sizes="64px"
             className={cn(
-              "h-full w-full rounded-full object-cover",
-              "transition-[transform,filter] duration-300 ease-out",
-              "group-hover/coin:scale-[4]",
-              "group-hover/coin:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
+              "h-full w-full origin-center rounded-full object-cover",
+              "transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0",
+              "group-hover:scale-[4]",
+              "group-hover:[filter:drop-shadow(0_8px_24px_rgba(0,0,0,0.35))]"
             )}
             unoptimized
           />
         ) : (
           <div
             className={cn(
-              "flex h-full w-full items-center justify-center rounded-full bg-violet-200 text-sm font-bold text-violet-900 dark:bg-violet-600/50 dark:text-violet-50",
-              "transition-transform duration-300 ease-out group-hover/coin:scale-[4]"
+              "flex h-full w-full origin-center items-center justify-center rounded-full bg-violet-200 text-sm font-bold text-violet-900 dark:bg-violet-600/50 dark:text-violet-50",
+              "transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0",
+              "group-hover:scale-[4]"
             )}
           >
             €2
