@@ -54,7 +54,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
         "group relative z-0 flex flex-col gap-1.5 rounded-xl border-2 p-3 text-left transition-all duration-200 hover:z-10",
         "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         owned
-          ? "border-yellow-400 bg-yellow-50 shadow-sm shadow-yellow-100 dark:border-amber-500/70 dark:bg-amber-950/35 dark:shadow-amber-950/40"
+          ? "border-amber-400 bg-card shadow-sm shadow-amber-500/10 ring-1 ring-amber-400/25 dark:border-amber-500/70 dark:bg-card dark:shadow-amber-950/20 dark:ring-amber-400/20"
           : "border-border bg-card hover:border-yellow-300 hover:bg-yellow-50/40 dark:hover:border-amber-500/35 dark:hover:bg-amber-950/20",
         loading && "opacity-60 cursor-wait"
       )}
@@ -65,7 +65,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
         className={cn(
           "group/coin relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 transition-colors hover:z-50",
           owned
-            ? "border-yellow-500 dark:border-amber-400"
+            ? "border-amber-400/90 dark:border-amber-400/80"
             : "border-muted group-hover:border-yellow-300 dark:group-hover:border-amber-500/50"
         )}
       >
@@ -93,7 +93,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
               "flex h-full w-full items-center justify-center rounded-full text-sm font-bold",
               "transition-transform duration-300 ease-out group-hover/coin:scale-[4]",
               owned
-                ? "bg-yellow-400 text-yellow-900 dark:bg-amber-500 dark:text-amber-950"
+                ? "bg-amber-100 text-amber-950 dark:bg-amber-500/35 dark:text-amber-100"
                 : "bg-muted/40 text-muted-foreground group-hover:bg-yellow-100 dark:group-hover:bg-amber-950/30"
             )}
           >
@@ -103,22 +103,10 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
       </div>
 
       {/* Year */}
-      <span
-        className={cn(
-          "text-center text-sm font-semibold",
-          owned ? "text-yellow-800 dark:text-amber-200" : "text-foreground"
-        )}
-      >
-        {coin.year}
-      </span>
+      <span className="text-center text-sm font-semibold text-foreground">{coin.year}</span>
 
       {/* Description */}
-      <span
-        className={cn(
-          "line-clamp-2 text-center text-xs leading-tight",
-          owned ? "text-yellow-700 dark:text-amber-200/90" : "text-muted-foreground"
-        )}
-      >
+      <span className="line-clamp-2 text-center text-xs leading-tight text-muted-foreground">
         {coin.description}
       </span>
 
@@ -129,7 +117,10 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
           "mx-auto mt-auto text-[10px]",
           coin.type === "standard" &&
             owned &&
-            "bg-yellow-200 text-yellow-800 dark:bg-amber-400/25 dark:text-amber-100"
+            "border-0 bg-amber-100 text-secondary-foreground dark:bg-amber-500/30",
+          coin.type !== "standard" &&
+            owned &&
+            "border-amber-500/70 text-foreground dark:border-amber-400/50"
         )}
       >
         {coin.type === "standard" ? t("standard") : t("commemorative")}
@@ -137,7 +128,7 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
 
       {/* Owned checkmark */}
       {owned && (
-        <span className="absolute right-2 top-2 text-yellow-500 dark:text-amber-400">✓</span>
+        <span className="absolute right-2 top-2 text-amber-600 dark:text-amber-400">✓</span>
       )}
     </button>
   );

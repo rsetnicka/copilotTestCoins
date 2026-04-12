@@ -162,8 +162,8 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
     <>
       <Button
         type="button"
-        variant="outline"
-        className="gap-2 border-violet-200 bg-violet-50/40 text-violet-950 hover:bg-violet-100 dark:border-violet-500/35 dark:bg-violet-950/35 dark:text-violet-100 dark:hover:bg-violet-900/45"
+        variant="default"
+        className="gap-2 bg-violet-600 font-semibold text-white shadow-md shadow-violet-600/30 hover:bg-violet-500 hover:text-white focus-visible:ring-violet-400 dark:bg-violet-500 dark:shadow-violet-950/50 dark:hover:bg-violet-400 dark:hover:text-white"
         onClick={() => setOpen(true)}
       >
         <Plus className="h-4 w-4" />
