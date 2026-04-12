@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { userCollections } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
@@ -34,9 +35,10 @@ export async function POST(request: Request) {
           eq(userCollections.coinId, coinId)
         )
       );
+    revalidatePath("/collection");
     return NextResponse.json({ owned: false });
-  } else {
-    await db.insert(userCollections).values({ userId: user.id, coinId });
-    return NextResponse.json({ owned: true });
   }
+  await db.insert(userCollections).values({ userId: user.id, coinId });
+  revalidatePath("/collection");
+  return NextResponse.json({ owned: true });
 }

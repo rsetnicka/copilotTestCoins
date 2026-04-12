@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { Coin } from "@/db/schema";
@@ -12,8 +13,13 @@ interface CoinCardProps {
 }
 
 export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
+  const router = useRouter();
   const [owned, setOwned] = useState(initialOwned);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setOwned(initialOwned);
+  }, [initialOwned]);
 
   async function toggle() {
     setLoading(true);
@@ -24,7 +30,13 @@ export function CoinCard({ coin, owned: initialOwned }: CoinCardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ coinId: coin.id }),
       });
-      if (!res.ok) setOwned((prev) => !prev);
+      if (!res.ok) {
+        setOwned((prev) => !prev);
+        return;
+      }
+      startTransition(() => {
+        router.refresh();
+      });
     } catch {
       setOwned((prev) => !prev);
     } finally {

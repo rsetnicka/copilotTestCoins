@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { coins, userCustomCoins } from "@/db/schema";
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not save coin." }, { status: 500 });
   }
 
+  revalidatePath("/collection");
   return NextResponse.json({ ok: true, id });
 }
 
@@ -168,5 +170,6 @@ export async function DELETE(request: Request) {
     console.error("custom-coins storage remove:", rmErr.message);
   }
 
+  revalidatePath("/collection");
   return NextResponse.json({ ok: true });
 }

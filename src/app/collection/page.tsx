@@ -90,8 +90,12 @@ export default async function CollectionPage() {
   const totalCoins = catalogTotal + customTotal;
   const catalogOwned = ownedIds.size;
   const totalOwned = catalogOwned + customTotal;
-  const progressPct =
-    totalCoins > 0 ? Math.round((totalOwned / totalCoins) * 100) : 0;
+  const progressRatio = totalCoins > 0 ? totalOwned / totalCoins : 0;
+  const progressPctRounded = Math.round(progressRatio * 100);
+  const progressLabel =
+    totalOwned > 0 && progressPctRounded === 0 ? "<1%" : `${progressPctRounded}%`;
+  const progressBarWidth =
+    totalOwned > 0 ? Math.max(progressRatio * 100, 0.35) : 0;
 
   async function signOut() {
     "use server";
@@ -159,13 +163,13 @@ export default async function CollectionPage() {
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="font-medium">Overall progress</span>
             <span className="text-muted-foreground">
-              {totalOwned} / {totalCoins} ({progressPct}%)
+              {totalOwned} / {totalCoins} ({progressLabel})
             </span>
           </div>
           <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
             <div
               className="h-full rounded-full bg-yellow-400 transition-all duration-500"
-              style={{ width: `${progressPct}%` }}
+              style={{ width: `${progressBarWidth}%` }}
             />
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">

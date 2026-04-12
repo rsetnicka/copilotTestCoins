@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -142,13 +142,15 @@ export function AddCustomCoinDialog({ countryOptions }: AddCustomCoinDialogProps
         setError((data as { error?: string }).error ?? "Could not save coin.");
         return;
       }
+      startTransition(() => {
+        router.refresh();
+      });
       setOpen(false);
       setName("");
       setDescription("");
       setYear("");
       setOtherCountry("");
       clearImage();
-      router.refresh();
     } finally {
       setLoading(false);
     }

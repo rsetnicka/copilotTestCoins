@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -29,7 +29,9 @@ export function CustomCoinCard({ row, imageUrl }: CustomCoinCardProps) {
         window.alert((j as { error?: string }).error ?? "Could not delete coin.");
         return;
       }
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } finally {
       setLoading(false);
     }
